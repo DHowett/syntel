@@ -24,7 +24,8 @@ sub body {
 
 sub call {
 	my $self = shift;
-	return FunctionCall->new($self, shift);
+	my @a = @_;
+	return FunctionCall->new($self, \@a);
 }
 
 sub prototype {
