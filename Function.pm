@@ -14,6 +14,7 @@ sub new {
 	$self->{RETURN} = shift;
 	$self->{PARAMETERS} = shift;
 	$self->{BODY} = BlockContext->new();
+	$self->{PROTOTYPE} = FunctionPrototype->new($self);
 	return bless $self, $pkg
 }
 
@@ -22,15 +23,15 @@ sub body {
 	return $self->{BODY};
 }
 
+sub prototype {
+	my $self = shift;
+	return $self->{PROTOTYPE}
+}
+
 sub call {
 	my $self = shift;
 	my @a = @_;
 	return FunctionCall->new($self, \@a);
-}
-
-sub prototype {
-	my $self = shift;
-	return FunctionPrototype->new($self);
 }
 
 sub emit {
