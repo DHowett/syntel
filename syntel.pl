@@ -7,6 +7,7 @@ use Assign;
 use Variable;
 use Vararg;
 use Return;
+use ConstantValue;
 use String;
 use BinaryOperator;
 
@@ -16,26 +17,26 @@ my $y = Variable->new("y", "int");
 $root->push($x->declaration);
 $root->push($y->declaration);
 
-my $mul = Function->new("multiply", "int", [Variable->new("val", "int"), Variable->new("val2", "int")]);
-$mul->body->defer(Return->new(BinaryOperator->new($mul->param("val"), "*", $mul->param("val2"))));
+my $mul = Function->new("multiply", "int", [Variable->new("_x", "int"), Variable->new("_y", "int")]);
+$mul->push(Return->new(BinaryOperator->new($mul->param(0), "*", $mul->param(1))));
 $root->push($mul);
 
 my $f = Function->new("whatever", "int", []);
-$f->body->defer(Return->new(32));
+$f->defer(Return->new(32));
 $root->push($f);
 
 my $printf = Function->new("printf", "int", [Variable->new("fmt", "char *"), Vararg->new()]);
 $root->push($printf->prototype);
 
 my $main = Function->new("main", "int", [Variable->new("argc", "int"), Variable->new("argv", "char**")]);
-$main->body->defer(Return->new($y));
-$main->body->push($x->assign(10));
-$main->body->push($y->assign($f->call()));
+$main->defer(Return->new($y));
+$main->push($x->assign(ConstantValue->new(10)));
+$main->push($y->assign($f->call()));
 my $printcall = $printf->call(String->new("x == %d, y == %d\n"), $x, $y);
-$main->body->push($printcall);
-$main->body->defer($printcall);
-$main->body->push($printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
-$main->body->push($x->assign($y));
+$main->push($printcall);
+$main->defer($printcall);
+$main->push($printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
+$main->push($x->assign($y));
 $root->push($main);
 
 print $root->emit();
