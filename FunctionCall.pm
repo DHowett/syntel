@@ -7,12 +7,16 @@ sub new {
 	my $pkg = ref $proto || $proto;
 	my $self = {};
 	$self->{FUNCTION} = shift;
+	$self->{PARAMETERS} = shift;
 	return bless $self, $pkg
 }
 
 sub value {
 	my $self = shift;
-	return $self->{FUNCTION}->{NAME}."()";
+	my $r = $self->{FUNCTION}->{NAME}."(";
+	$r .= join(",", map{if(ref $_) { $_->value(); } else { $_; }} @{$self->{PARAMETERS}});
+	$r .= ")";
+	return $r;
 }
 
 sub emit {

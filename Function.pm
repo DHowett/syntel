@@ -24,7 +24,7 @@ sub body {
 
 sub call {
 	my $self = shift;
-	return FunctionCall->new($self);
+	return FunctionCall->new($self, shift);
 }
 
 sub prototype {
