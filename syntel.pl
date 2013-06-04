@@ -5,7 +5,9 @@ use Context;
 use Function;
 use Assign;
 use Variable;
+use Vararg;
 use Return;
+use String;
 
 my $root = Context->new();
 my $x = Variable->new("x", "int");
