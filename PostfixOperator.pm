@@ -19,6 +19,6 @@ sub expr {
 	return Util::expr($self->{M1}).$self->{OP};
 }
 
+# emit: handled by Expression
+
 1;
-
-

@@ -30,10 +30,6 @@ sub expr {
 	return $self->{NAME};
 }
 
-sub emit {
-	my $self = shift;
-	return $self->{NAME};
-}
+# emit: handled by Expression
 
 1;
-

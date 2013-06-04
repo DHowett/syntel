@@ -20,5 +20,7 @@ sub expr {
 	return Util::expr($self->{M1})." ".$self->{OP}." ".Util::expr($self->{M2});
 }
 
+# emit: handled by Expression
+
 1;
 

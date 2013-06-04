@@ -22,9 +22,6 @@ sub expr {
 	return $r;
 }
 
-sub emit {
-	my $self = shift;
-	return $self->expr();
-}
+# emit: handled by Expression
 
 1;

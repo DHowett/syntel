@@ -19,5 +19,6 @@ sub expr {
 	return "\"".$v."\"";
 }
 
-1;
+# emit: handled by Expression
 
+1;

@@ -17,9 +17,11 @@ sub new {
 	return bless $self, $pkg
 }
 
-sub emit {
+sub expr {
 	my $self = shift;
 	return $self->{VARIABLE}->expr()." = ".Util::expr($self->{VALUE});
 }
+
+# emit: handled by Expression
 
 1;
