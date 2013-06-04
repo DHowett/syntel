@@ -2,6 +2,8 @@ package Function;
 use strict;
 use warnings;
 
+use Scalar::Util;
+
 use BlockContext;
 use FunctionCall;
 use FunctionPrototype;
@@ -26,6 +28,18 @@ sub body {
 sub prototype {
 	my $self = shift;
 	return $self->{PROTOTYPE}
+}
+
+sub param {
+	my $self = shift;
+	my $idx = shift;
+	if(Scalar::Util::looks_like_number($idx)) {
+		return $self->{PARAMETERS}->[$idx];
+	} else {
+		for(@{$self->{PARAMETERS}}) {
+			return $_ if $_->{NAME} eq $idx;
+		}
+	}
 }
 
 sub call {
