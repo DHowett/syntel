@@ -4,6 +4,7 @@ use warnings;
 
 use BlockContext;
 use FunctionCall;
+use FunctionPrototype;
 
 sub new {
 	my $proto = shift;
@@ -26,14 +27,15 @@ sub call {
 	return FunctionCall->new($self);
 }
 
+sub prototype {
+	my $self = shift;
+	return FunctionPrototype->new($self);
+}
+
 sub emit {
 	my $self = shift;
 	my $r = "";
-	$r .= $self->{RETURN}." ".$self->{NAME};
-	$r .= "(";
-	$r .= join(",", map {$_->declaration()->emit()} @{$self->{PARAMETERS}});
-	$r .= ")";
-	$r .= $/;
+	$r .= $self->prototype->emit();
 	$r .= $self->{BODY}->emit();
 	return $r;
 }
