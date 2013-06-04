@@ -1,6 +1,7 @@
 package FunctionPrototype;
 use strict;
 use warnings;
+use parent qw(Statement);
 
 sub new {
 	my $proto = shift;

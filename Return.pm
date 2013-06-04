@@ -1,6 +1,7 @@
 package Return;
 use strict;
 use warnings;
+use parent qw(Statement);
 
 use Util;
 
