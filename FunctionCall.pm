@@ -1,6 +1,7 @@
 package FunctionCall;
 use strict;
 use warnings;
+use parent qw(Expression);
 
 use Util;
 
@@ -13,17 +14,17 @@ sub new {
 	return bless $self, $pkg
 }
 
-sub value {
+sub expr {
 	my $self = shift;
 	my $r = $self->{FUNCTION}->{NAME}."(";
-	$r .= join(",", map{Util::coerce($_)} @{$self->{PARAMETERS}});
+	$r .= join(",", map{Util::expr($_)} @{$self->{PARAMETERS}});
 	$r .= ")";
 	return $r;
 }
 
 sub emit {
 	my $self = shift;
-	return $self->value();
+	return $self->expr();
 }
 
 1;

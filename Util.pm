@@ -2,10 +2,10 @@ package Util;
 use strict;
 use warnings;
 
-sub coerce {
+sub expr {
 	my $val = shift;
-	if(ref($val)) {
-		return $val->value();
+	if(ref($val) && $val->DOES("Expression")) {
+		return $val->expr();
 	}
 	return $val;
 }

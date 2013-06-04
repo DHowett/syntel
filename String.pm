@@ -1,6 +1,7 @@
 package String;
 use strict;
 use warnings;
+use parent qw(Expression);
 
 sub new {
 	my $proto = shift;
@@ -10,7 +11,7 @@ sub new {
 	return bless $self, $pkg
 }
 
-sub value {
+sub expr {
 	my $self = shift;
 	my $v = $$self;
 	$v =~ s/"/\\"/g;

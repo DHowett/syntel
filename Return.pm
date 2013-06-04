@@ -15,7 +15,7 @@ sub new {
 sub emit {
 	my $self = shift;
 	my $v = $self->{VALUE};
-	return "return ".Util::coerce($v);
+	return "return ".Util::expr($v);
 }
 
 1;

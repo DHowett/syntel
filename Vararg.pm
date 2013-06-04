@@ -19,7 +19,7 @@ sub assign {
 	return $self;
 }
 
-sub value {
+sub expr {
 	my $self = shift;
 	return "...";
 }

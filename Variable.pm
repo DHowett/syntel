@@ -1,6 +1,7 @@
 package Variable;
 use strict;
 use warnings;
+use parent qw(Expression LValue);
 
 use Declare;
 use Assign;
@@ -24,7 +25,7 @@ sub assign {
 	return Assign->new($self, shift);
 }
 
-sub value {
+sub expr {
 	my $self = shift;
 	return $self->{NAME};
 }
