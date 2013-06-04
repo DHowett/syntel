@@ -2,6 +2,8 @@ package Assign;
 use strict;
 use warnings;
 
+use Util;
+
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
@@ -13,11 +15,7 @@ sub new {
 
 sub emit {
 	my $self = shift;
-	my $v = $self->{VALUE};
-	if(ref($v)) {
-		$v = $v->value();
-	}
-	return $self->{VARIABLE}->value()." = ".$v;
+	return $self->{VARIABLE}->value()." = ".Util::coerce($self->{VALUE});
 }
 
 1;

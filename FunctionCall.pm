@@ -2,6 +2,8 @@ package FunctionCall;
 use strict;
 use warnings;
 
+use Util;
+
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
@@ -14,7 +16,7 @@ sub new {
 sub value {
 	my $self = shift;
 	my $r = $self->{FUNCTION}->{NAME}."(";
-	$r .= join(",", map{if(ref $_) { $_->value(); } else { $_; }} @{$self->{PARAMETERS}});
+	$r .= join(",", map{Util::coerce($_)} @{$self->{PARAMETERS}});
 	$r .= ")";
 	return $r;
 }
