@@ -24,6 +24,8 @@ sub body {
 	my $self = shift;
 	return $self->{BODY};
 }
+sub push { my $self = shift; return $self->{BODY}->push(@_); }
+sub defer { my $self = shift; return $self->{BODY}->defer(@_); }
 
 sub prototype {
 	my $self = shift;
