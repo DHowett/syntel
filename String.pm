@@ -1,15 +1,7 @@
 package String;
 use strict;
 use warnings;
-use parent qw(Expression);
-
-sub new {
-	my $proto = shift;
-	my $pkg = ref $proto || $proto;
-	my $str = shift;
-	my $self = \$str;
-	return bless $self, $pkg
-}
+use parent qw(ConstantValue);
 
 sub expr {
 	my $self = shift;
@@ -18,7 +10,5 @@ sub expr {
 	$v =~ s/\n/\\n/g;
 	return "\"".$v."\"";
 }
-
-# emit: handled by Expression
 
 1;
