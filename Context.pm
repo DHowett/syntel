@@ -7,6 +7,7 @@ sub new {
 	my $pkg = ref $proto || $proto;
 	my $self = {};
 	$self->{CONTENTS} = [];
+	$self->{DEFERRED} = [];
 	return bless $self, $pkg
 }
 
@@ -15,10 +16,15 @@ sub push {
 	push(@{$self->{CONTENTS}}, shift)
 }
 
+sub defer {
+	my $self = shift;
+	CORE::splice(@{$self->{DEFERRED}}, 0, 0, shift)
+}
+
 sub emit {
 	my $self = shift;
 	my $r = "";
-	for(@{$self->{CONTENTS}}) {
+	for(@{$self->{CONTENTS}}, @{$self->{DEFERRED}}) {
 		$r .= $_->emit();
 		$r .= ";".$/;
 	}

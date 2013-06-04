@@ -7,10 +7,7 @@ sub emit {
 	my $self = shift;
 	my $r = "";
 	$r .= "{".$/;
-	for(@{$self->{CONTENTS}}) {
-		$r .= $_->emit();
-		$r .= ";".$/;
-	}
+	$r .= $self->SUPER::emit();
 	$r .= "}".$/;
 	return $r;
 }

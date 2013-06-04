@@ -15,7 +15,13 @@ sub emit {
 	my $r = "";
 	$r .= $self->{FUNCTION}->{RETURN}." ".$self->{FUNCTION}->{NAME};
 	$r .= "(";
-	$r .= join(",", map {$_->declaration()->emit()} @{$self->{FUNCTION}->{PARAMETERS}});
+	if(defined $self->{FUNCTION}->{PARAMETERS}) {
+		if(scalar @{$self->{FUNCTION}->{PARAMETERS}} > 0) {
+			$r .= join(",", map {$_->declaration()->emit()} @{$self->{FUNCTION}->{PARAMETERS}});
+		} else {
+			$r .= "void";
+		}
+	}
 	$r .= ")";
 	return $r;
 }
