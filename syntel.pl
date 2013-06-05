@@ -10,6 +10,8 @@ use Return;
 use ConstantValue;
 use String;
 use BinaryOperator;
+use PrefixOperator;
+use While;
 
 my $root = Context->new();
 my $x = Variable->new("x", "int");
@@ -37,6 +39,26 @@ $main->push($printcall);
 $main->defer($printcall);
 $main->push($printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
 $main->push($x->assign($y));
+
+{
+	my $block = BlockContext->new();
+	my $i = Variable->new("i", "int");
+	$block->push($i->declaration(10));
+
+	my $iprint = $printf->call(String->new("i = %d "), $i);
+	my $idec = PrefixOperator->new("--", $i);
+	my $icmp = BinaryOperator->new($i, ">", 0);
+
+	my $while = While->new($icmp, [$iprint, $idec]);
+	$block->push($while);
+	$block->push($printf->call(String->new("\n")));
+
+	$block->push($i->assign(10));
+	$block->push(While->do([$iprint, $idec])->while($icmp));
+	$block->push($printf->call(String->new("\n")));
+	$main->push($block);
+}
+
 $root->push($main);
 
 print $root->emit();
