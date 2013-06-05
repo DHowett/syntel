@@ -6,14 +6,16 @@ sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
 	my $self = {};
-	$self->{CONTENTS} = [];
+	my $inref = shift;
+	$inref = [] if !defined $inref;
+	$self->{CONTENTS} = $inref;
 	$self->{DEFERRED} = [];
 	return bless $self, $pkg
 }
 
 sub push {
 	my $self = shift;
-	push(@{$self->{CONTENTS}}, shift)
+	CORE::push(@{$self->{CONTENTS}}, shift)
 }
 
 sub defer {
