@@ -2,7 +2,7 @@ package Type;
 use strict;
 use warnings;
 
-use Util qw(matchedParenthesisSet smartSplit);
+use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit);
 
 sub new {
 	my $proto = shift;
@@ -28,6 +28,9 @@ sub _typify {
 		substr($typeString, $-[1], $+[1] - $-[1]) = "";
 	}
 
+	# fp first: (*x) can be a function pointer first
+	# pointers after
+	# structs later because we could have pointers TO them.
 	if(defined $typeref->{ARGS}) {
 		$pkg = "_FunctionType";
 		$type->{ARGUMENTS} = [map {_typify($_)} @{$typeref->{ARGS}}];
@@ -54,6 +57,10 @@ sub _typify {
 			# So we just pretend that function is all we had.
 			$type = $innerType;
 		}
+	} elsif($typeString =~ /^(struct|union)\s*(\w+)?/) {
+		$pkg = $1 eq "union" ? "_UnionType" : "_StructType";
+		$type->{CONTENTS} = [map {_typify($_)} @{$typeref->{CONTENTS}}] if defined $typeref->{CONTENTS};
+		$type->{STRUCTNAME} = $2 if defined $2;
 	} else {
 		$pkg = "_PlainType";
 
@@ -71,20 +78,38 @@ sub _typify {
 sub _parseTypeString {
 	my $type = _stripUnnecessaryParens(shift);
 	my $innerTypeRef = shift;
-	my ($left, $right, $lo, $rc) = _leftRight($type);
-
 	my $typeRef = {};
 	$typeRef->{INNER} = $innerTypeRef if defined $innerTypeRef;
 
-	# If there's a righthand side, we probably have a function pointer.
-	# Attempt to erase it.
-	$type = substr($type, 0, $lo-1).substr($type, $rc) if defined $right;
+	my @braces = matchedDelimiterSet($type, "{", "}");
+	# We try to handle a struct body first, because functions/function pointers
+	# can return structures.
+	# 'struct <name>' falls through as a 'plain' type and is handled in _typify.
+	if($type =~ /^\s*(struct|union)/ && defined $braces[0]) {
+		my $contents = substr($type, $braces[0], $braces[1] - $braces[0] - 1);
+
+		# Erase struct declaration.
+		substr($type, $braces[0]-1, $braces[1] - $braces[0] + 1) = "";
+
+		my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
+		$typeRef->{CONTENTS} = [map {_parseTypeString($_);} @subTypeStrings];
+	}
+
+	$type =~ s/\s+/ /;
 	$type =~ s/^\s+//;
 	$type =~ s/\s+$//;
 	$typeRef->{TYPE} = $type;
 
+	my ($left, $right, $lo, $rc) = _leftRight($type);
+	# If there's a righthand side, we probably have a function pointer.
+	# Attempt to erase it.
 	# $right is typically function arguments.
 	if(defined $right) {
+		$type = substr($type, 0, $lo-1).substr($type, $rc) if defined $right;
+		$type =~ s/^\s+//;
+		$type =~ s/\s+$//;
+		$typeRef->{TYPE} = $type;
+
 		my @argStrings = smartSplit(qr/\s*,\s*/, $right);
 		$typeRef->{ARGS} = [map {_parseTypeString($_);} @argStrings];
 		# Descend left iff there's a righthand side
@@ -150,6 +175,25 @@ use strict;
 use warnings;
 use parent qw(Type);
 use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Function[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
+1;
+package _StructType; # CONTENTS
+use strict;
+use warnings;
+use parent qw(Type);
+use overload '""' => sub {
+	my $s = shift;
+	return ($s->{NAME} ? $s->{NAME}.":":"").$s->_typeForStringify.
+		(defined $s->{CONTENTS}
+			? "{".join(",", map {"".$_} @{$s->{CONTENTS}})."}"
+			: "(\"".$s->{STRUCTNAME}."\")");
+};
+sub _typeForStringify { return "Struct"; }
+1;
+package _UnionType;
+use strict;
+use warnings;
+our @ISA = qw(_StructType);
+sub _typeForStringify { return "Union"; }
 1;
 package _PlainType; # TYPE
 use strict;
