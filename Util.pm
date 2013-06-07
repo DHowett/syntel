@@ -4,7 +4,7 @@ use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(matchedParenthesisSet smartSplit);
+our @EXPORT_OK = qw(matchedDelimiterSet matchedParenthesisSet smartSplit);
 
 sub expr {
 	my $val = shift;
@@ -19,13 +19,16 @@ sub fallsBetween {
 	while(@_ > 0) {
 		my $start = shift;
 		my $end = shift;
+		next if !defined $start;
 		return 1 if ($start < $idx && (!defined($end) || $end > $idx))
 	}
 	return 0;
 }
 
-sub matchedParenthesisSet {
+sub matchedDelimiterSet {
 	my $in = shift;
+	my @delims = @_;
+	my @locations;
 
 	my $opening = -1;
 	my $closing = -1;
@@ -33,19 +36,27 @@ sub matchedParenthesisSet {
 	# and have reached its closing ).
 	my $parenmatch = $in;
 	my $pdepth = 0;
-	while($parenmatch =~ /[;()]/g) {
 
-		if($& eq "(") {
-			if($pdepth == 0) { $opening = $+[0]; }
+	my $d = join("", @delims);
+	my $re = qr/[$d]/;
+	while($parenmatch =~ /$re/g) {
+
+		if($& eq $delims[0]) {
+			if($pdepth == 0) { push(@locations, $+[0]); }
 			$pdepth++;
-		} elsif($& eq ")") {
+		} elsif($& eq $delims[1]) {
 			$pdepth--;
-			if($pdepth == 0) { $closing = $+[0]; last; }
+			if($pdepth == 0) { push(@locations, $+[0]); }
 		}
 	}
 
-	return undef if $opening == -1;
-	return ($opening, $closing);
+	push(@locations, -1) if((scalar @locations) % 2 == 1);
+	return @locations;
+}
+
+sub matchedParenthesisSet {
+	my $in = shift;
+	return matchedDelimiterSet($in, "(", ")");
 }
 
 sub smartSplit {
@@ -56,13 +67,13 @@ sub smartSplit {
 	my $limit = shift;
 	$limit = 0 if !defined $limit;
 
-	my @parens = matchedParenthesisSet($in);
+	my @delims = (matchedDelimiterSet($in, "(", ")"), matchedDelimiterSet($in, "{", "}"), matchedDelimiterSet($in, "[", "]"));
 
 	my $lstart = 0;
 	my @pieces = ();
 	my $piece = "";
 	while($in =~ /$re/g) {
-		next if (defined $parens[0] && fallsBetween($-[0], @parens));
+		next if fallsBetween($-[0], @delims);
 		$piece = substr($in, $lstart, $-[0]-$lstart);
 		push(@pieces, $piece);
 		$lstart = $+[0];
