@@ -19,6 +19,15 @@ sub _typify {
 	my $pkg;
 
 	my $typeString = $typeref->{TYPE};
+
+	# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
+	# pull NAME out and leave the rest unmolested.
+	# This is also valid for TYPE *NAME[ and TYPE ^NAME
+	if($typeString =~ /[\^\*](\w+)\[?/) {
+		$type->{NAME} = $1;
+		substr($typeString, $-[1], $+[1] - $-[1]) = "";
+	}
+
 	if(defined $typeref->{ARGS}) {
 		$pkg = "_FunctionType";
 		$type->{ARGUMENTS} = [map {_typify($_)} @{$typeref->{ARGS}}];
@@ -34,7 +43,6 @@ sub _typify {
 			$alen = int($2) if $2 ne "";
 			$type->{LENGTH} = $alen;
 		}
-		#$pkg = "_ArrayType" if($1 eq "*");
 
 		$typeref->{TYPE} = $newType;
 		my $innerType = _typify($newType eq "" ? $typeref->{INNER} : $typeref);
@@ -48,6 +56,12 @@ sub _typify {
 		}
 	} else {
 		$pkg = "_PlainType";
+
+		# If our type string is of the sort 'TYPE NAME', pull out the name.
+		if($typeString =~ /\s+(\w+)$/p) {
+			$typeString = ${^PREMATCH};
+			$type->{NAME} = $1;
+		}
 		$type->{TYPE} = $typeString;
 	}
 
@@ -117,29 +131,29 @@ package _ArrayType; # LENGTH
 use strict;
 use warnings;
 use parent qw(Type);
-use overload '""' => sub { my $s = shift; return "Array[".($s->{LENGTH}//"")."](".($s->{INNER_TYPE}//"Nothing").")"; };
+use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Array[".($s->{LENGTH}//"")."](".($s->{INNER_TYPE}//"Nothing").")"; };
 1;
 package _PointerType; # INNER_TYPE
 use strict;
 use warnings;
 use parent qw(Type);
-use overload '""' => sub { my $s = shift; return "Pointer(".($s->{INNER_TYPE}//"Nothing").")"; };
+use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Pointer(".($s->{INNER_TYPE}//"Nothing").")"; };
 1;
 package _BlockType; # (see _FunctionType)
 use strict;
 use warnings;
 use parent qw(Type);
-use overload '""' => sub { my $s = shift; return "Block[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
+use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Block[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
 1;
 package _FunctionType; # RETURN_TYPE ARGUMENTS
 use strict;
 use warnings;
 use parent qw(Type);
-use overload '""' => sub { my $s = shift; return "Function[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
+use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Function[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
 1;
 package _PlainType; # TYPE
 use strict;
 use warnings;
 use parent qw(Type);
-use overload '""' => sub { my $s = shift; return lc($s->{TYPE}); };
+use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}); };
 1;
