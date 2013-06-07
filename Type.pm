@@ -55,6 +55,7 @@ sub _typify {
 		} else {
 			# The inner type of a Block will only be a function
 			# So we just pretend that function is all we had.
+			$innerType->{NAME} = $type->{NAME};
 			$type = $innerType;
 		}
 	} elsif($typeString =~ /^(struct|union)\s*(\w+)?/) {
