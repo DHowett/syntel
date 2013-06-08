@@ -32,16 +32,16 @@ sub _typify {
 	# pointers after
 	# structs later because we could have pointers TO them.
 	if(defined $typeref->{ARGS}) {
-		$pkg = "_FunctionType";
+		$pkg = "FunctionType";
 		$type->{ARGUMENTS} = [map {_typify($_)} @{$typeref->{ARGS}}];
 		delete $typeref->{ARGS};
 		$type->{RETURN_TYPE} = _typify($typeref);
 	} elsif($typeString =~ /\s*(\^|\*|\[\s*(\d*)\s*\])$/p) {
 		my $newType = ${^PREMATCH};
-		$pkg = "_PointerType" if($1 eq "*");
-		$pkg = "_BlockType" if($1 eq "^");
+		$pkg = "PointerType" if($1 eq "*");
+		$pkg = "BlockType" if($1 eq "^");
 		if(substr($1, 0, 1) eq "[") {
-			$pkg = "_ArrayType";
+			$pkg = "ArrayType";
 			my $alen = undef;
 			$alen = int($2) if $2 ne "";
 			$type->{LENGTH} = $alen;
@@ -50,7 +50,7 @@ sub _typify {
 		$typeref->{TYPE} = $newType;
 		my $innerType = _typify($newType eq "" ? $typeref->{INNER} : $typeref);
 		# Merge everything inside a BlockType's inner type into it. Blocks don't have inner types.
-		if($pkg ne "_BlockType") {
+		if($pkg ne "BlockType") {
 			$type->{INNER_TYPE} = $innerType;
 		} else {
 			# The inner type of a Block will only be a function
@@ -59,11 +59,11 @@ sub _typify {
 			$type = $innerType;
 		}
 	} elsif($typeString =~ /^(struct|union)\s*(\w+)?/) {
-		$pkg = $1 eq "union" ? "_UnionType" : "_StructType";
+		$pkg = $1 eq "union" ? "UnionType" : "StructType";
 		$type->{CONTENTS} = [map {_typify($_)} @{$typeref->{CONTENTS}}] if defined $typeref->{CONTENTS};
 		$type->{STRUCTNAME} = $2 if defined $2;
 	} else {
-		$pkg = "_PlainType";
+		$pkg = "PlainType";
 
 		# If our type string is of the sort 'TYPE NAME', pull out the name.
 		if($typeString =~ /\s+(\w+)$/p) {
@@ -153,31 +153,31 @@ sub _leftRight {
 
 1;
 
-package _ArrayType; # LENGTH
+package ArrayType; # LENGTH
 use strict;
 use warnings;
 use parent qw(Type);
 use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Array[".($s->{LENGTH}//"")."](".($s->{INNER_TYPE}//"Nothing").")"; };
 1;
-package _PointerType; # INNER_TYPE
+package PointerType; # INNER_TYPE
 use strict;
 use warnings;
 use parent qw(Type);
 use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Pointer(".($s->{INNER_TYPE}//"Nothing").")"; };
 1;
-package _BlockType; # (see _FunctionType)
+package BlockType; # (see _FunctionType)
 use strict;
 use warnings;
 use parent qw(Type);
 use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Block[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
 1;
-package _FunctionType; # RETURN_TYPE ARGUMENTS
+package FunctionType; # RETURN_TYPE ARGUMENTS
 use strict;
 use warnings;
 use parent qw(Type);
 use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Function[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
 1;
-package _StructType; # CONTENTS
+package StructType; # CONTENTS
 use strict;
 use warnings;
 use parent qw(Type);
@@ -190,13 +190,13 @@ use overload '""' => sub {
 };
 sub _typeForStringify { return "Struct"; }
 1;
-package _UnionType;
+package UnionType;
 use strict;
 use warnings;
-our @ISA = qw(_StructType);
+our @ISA = qw(StructType);
 sub _typeForStringify { return "Union"; }
 1;
-package _PlainType; # TYPE
+package PlainType; # TYPE
 use strict;
 use warnings;
 use parent qw(Type);
