@@ -1,13 +1,13 @@
 package Type;
 use strict;
 use warnings;
+use Scalar::Util qw(blessed);
 
 use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
-	my $typeName = shift;
 	return _parseTypeString($typeName);
 }
 
@@ -139,56 +139,86 @@ sub _leftRight {
 
 1;
 
+package _TypeBase; # NAME
+use strict;
+use warnings;
+use overload '""' => "_stringify";
+our @ISA = qw(Type);
+
+sub _stringify {
+	my $self = shift;
+	my $pkg = blessed $self;
+	$pkg =~ s/(\w+)Type$/$1/;
+	return ($self->{NAME} ? $self->{NAME}.":" : "").$pkg;
+}
+1;
+
 package ArrayType; # LENGTH
 use strict;
 use warnings;
-use parent qw(Type);
-use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Array[".($s->{LENGTH}//"")."](".($s->{INNER_TYPE}//"Nothing").")"; };
+our @ISA = qw(_TypeBase);
+
+sub _stringify {
+	my $s = shift;
+	return $s->SUPER::_stringify."[".($s->{LENGTH}//"")."](".($s->{INNER_TYPE}//"Nothing").")";
+}
 1;
+
 package PointerType; # INNER_TYPE
 use strict;
 use warnings;
-use parent qw(Type);
-use overload '""' => sub {
+our @ISA = qw(_TypeBase);
+
+sub _stringify {
 	my $s = shift;
-	return ($s->{NAME} ? $s->{NAME}.":":"").$s->_typeForStringify."(".($s->{INNER_TYPE}//"Nothing").")";
-};
-sub _typeForStringify { return "Pointer"; }
+	return $s->SUPER::_stringify."(".($s->{INNER_TYPE}//"Nothing").")";
+}
 1;
+
 package BlockPointerType; # (see _FunctionType)
 use strict;
 use warnings;
 our @ISA = qw(PointerType);
-sub _typeForStringify { return "BlockPointer"; }
 1;
+
 package FunctionType; # RETURN_TYPE ARGUMENTS
 use strict;
 use warnings;
-use parent qw(Type);
-use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Function[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
+our @ISA = qw(_TypeBase);
+
+sub _stringify {
+	my $s = shift;
+	return $s->SUPER::_stringify."[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")";
+}
 1;
+
 package StructType; # CONTENTS
 use strict;
 use warnings;
-use parent qw(Type);
-use overload '""' => sub {
+our @ISA = qw(_TypeBase);
+
+sub _stringify {
 	my $s = shift;
-	return ($s->{NAME} ? $s->{NAME}.":":"").$s->_typeForStringify.
+	return $s->SUPER::_stringify.
 		(defined $s->{CONTENTS}
 			? "{".join(",", map {"".$_} @{$s->{CONTENTS}})."}"
 			: "(\"".$s->{STRUCTNAME}."\")");
 };
-sub _typeForStringify { return "Struct"; }
 1;
+
 package UnionType;
 use strict;
 use warnings;
 our @ISA = qw(StructType);
-sub _typeForStringify { return "Union"; }
 1;
+
 package PlainType; # TYPE
 use strict;
 use warnings;
-use parent qw(Type);
-use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}); };
+our @ISA = qw(_TypeBase);
+
+sub _stringify {
+	my $s = shift;
+	return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE});
+}
 1;
