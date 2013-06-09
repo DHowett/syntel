@@ -2,122 +2,108 @@ package Type;
 use strict;
 use warnings;
 
-use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit);
+use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
 	my $typeName = shift;
-	return _typify(_parseTypeString($typeName));
-}
-
-sub _typify {
-	my $typeref = shift;
-	return undef if !defined $typeref;
-
-	my $type = {};
-	my $pkg;
-
-	my $typeString = $typeref->{TYPE};
-
-	# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
-	# pull NAME out and leave the rest unmolested.
-	# This is also valid for TYPE *NAME[ and TYPE ^NAME
-	if($typeString =~ /[\^\*](\w+)\[?/) {
-		$type->{NAME} = $1;
-		substr($typeString, $-[1], $+[1] - $-[1]) = "";
-	}
-
-	# fp first: (*x) can be a function pointer first
-	# pointers after
-	# structs later because we could have pointers TO them.
-	if(defined $typeref->{ARGS}) {
-		$pkg = "FunctionType";
-		$type->{ARGUMENTS} = [map {_typify($_)} @{$typeref->{ARGS}}];
-		delete $typeref->{ARGS};
-		$type->{RETURN_TYPE} = _typify($typeref);
-	} elsif($typeString =~ /\s*(\^|\*|\[\s*(\d*)\s*\])$/p) {
-		my $newType = ${^PREMATCH};
-		$pkg = "PointerType" if($1 eq "*");
-		$pkg = "BlockType" if($1 eq "^");
-		if(substr($1, 0, 1) eq "[") {
-			$pkg = "ArrayType";
-			my $alen = undef;
-			$alen = int($2) if $2 ne "";
-			$type->{LENGTH} = $alen;
-		}
-
-		$typeref->{TYPE} = $newType;
-		my $innerType = _typify($newType eq "" ? $typeref->{INNER} : $typeref);
-		# Merge everything inside a BlockType's inner type into it. Blocks don't have inner types.
-		if($pkg ne "BlockType") {
-			$type->{INNER_TYPE} = $innerType;
-		} else {
-			# The inner type of a Block will only be a function
-			# So we just pretend that function is all we had.
-			$innerType->{NAME} = $type->{NAME};
-			$type = $innerType;
-		}
-	} elsif($typeString =~ /^(struct|union)\s*(\w+)?/) {
-		$pkg = $1 eq "union" ? "UnionType" : "StructType";
-		$type->{CONTENTS} = [map {_typify($_)} @{$typeref->{CONTENTS}}] if defined $typeref->{CONTENTS};
-		$type->{STRUCTNAME} = $2 if defined $2;
-	} else {
-		$pkg = "PlainType";
-
-		# If our type string is of the sort 'TYPE NAME', pull out the name.
-		if($typeString =~ /\s+(\w+)$/p) {
-			$typeString = ${^PREMATCH};
-			$type->{NAME} = $1;
-		}
-		$type->{TYPE} = $typeString;
-	}
-
-	return bless $type, $pkg;
+	return _parseTypeString($typeName);
 }
 
 sub _parseTypeString {
-	my $type = _stripUnnecessaryParens(shift);
-	my $innerTypeRef = shift;
-	my $typeRef = {};
-	$typeRef->{INNER} = $innerTypeRef if defined $innerTypeRef;
+	my $typeString = _stripUnnecessaryParens(shift);
+	my $passedInnerType = shift;
+	my $type = {};
+	#$type->{INNER_TYPE} = $innerType if defined $innerType;
 
-	my @braces = matchedDelimiterSet($type, "{", "}");
-	# We try to handle a struct body first, because functions/function pointers
-	# can return structures.
-	# 'struct <name>' falls through as a 'plain' type and is handled in _typify.
-	if($type =~ /^\s*(struct|union)/ && defined $braces[0]) {
-		my $contents = substr($type, $braces[0], $braces[1] - $braces[0] - 1);
+	$typeString =~ s/\s+/ /;
+	$typeString =~ s/^\s+//;
+	$typeString =~ s/\s+$//;
 
-		# Erase struct declaration.
-		substr($type, $braces[0]-1, $braces[1] - $braces[0] + 1) = "";
+	my @braces = matchedDelimiterSet($typeString, "{", "}");
+	my @parens = matchedDelimiterSet($typeString, "(", ")");
 
-		my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
-		$typeRef->{CONTENTS} = [map {_parseTypeString($_);} @subTypeStrings];
-	}
+	# If there's more than two sets of parens outside braces (which would be a possible struct/complex type)
+	# Erase it, and take the right as function arguments: we probably have a function pointer.
+	if(@parens > 3 && !fallsBetween($parens[3], @braces)) {
+		bless $type, "FunctionType";
 
-	$type =~ s/\s+/ /;
-	$type =~ s/^\s+//;
-	$type =~ s/\s+$//;
-	$typeRef->{TYPE} = $type;
+		my ($left, $right) = (
+			substr($typeString, $parens[0], $parens[1]-$parens[0]-1),
+			substr($typeString, $parens[2], $parens[3]-$parens[2]-1)
+		);
 
-	my ($left, $right, $lo, $rc) = _leftRight($type);
-	# If there's a righthand side, we probably have a function pointer.
-	# Attempt to erase it.
-	# $right is typically function arguments.
-	if(defined $right) {
-		$type = substr($type, 0, $lo-1).substr($type, $rc) if defined $right;
-		$type =~ s/^\s+//;
-		$type =~ s/\s+$//;
-		$typeRef->{TYPE} = $type;
+		$typeString = substr($typeString, 0, $parens[0]-1).substr($typeString, $parens[3]);
+		my $returnType = _parseTypeString($typeString);
+		# If we bear a passed inner type, it's probably our return type.
+		if($passedInnerType) {
+			my $n = \$returnType;
+			while($$n) {
+				$n = \${$n}->{INNER_TYPE};
+			}
+			$$n = $passedInnerType;
+		}
+		$type->{RETURN_TYPE} = $returnType;
 
 		my @argStrings = smartSplit(qr/\s*,\s*/, $right);
-		$typeRef->{ARGS} = [map {_parseTypeString($_);} @argStrings];
-		# Descend left iff there's a righthand side
-		$typeRef = _parseTypeString($left, $typeRef) if defined $right;
+		#print STDERR join("!", @argStrings),$/;
+		$type->{ARGUMENTS} = [map {_parseTypeString($_);} @argStrings];
+		# Descend left iff there's a righthand side. We might need to nest within it.
+
+		$type = _parseTypeString($left, $type);
+		return $type;
+	} else {
+		my $pkg = undef;
+		# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
+		# pull NAME out and leave the rest unmolested.
+		# This is also valid for TYPE *NAME[ and TYPE ^NAME
+		if($typeString =~ /[\^\*](\w+)(\[\d*\])?$/) {
+			$type->{NAME} = $1;
+			substr($typeString, $-[1], $+[1] - $-[1]) = "";
+		}
+
+		if($typeString =~ /\s*(\^|\*|\[\s*(\d*)\s*\])$/p) {
+			my $newType = ${^PREMATCH};
+			$pkg = "PointerType" if($1 eq "*");
+			$pkg = "BlockPointerType" if($1 eq "^");
+			if(substr($1, 0, 1) eq "[") {
+				$pkg = "ArrayType";
+				my $alen = undef;
+				$alen = int($2) if $2 ne "";
+				$type->{LENGTH} = $alen;
+			}
+
+			# If we have a subtype string, we might need to nest *our* inner type inside it.
+			my $innerType = $newType ? _parseTypeString($newType, $passedInnerType) : $passedInnerType;
+
+			$type->{INNER_TYPE} = $innerType;
+		} elsif($typeString =~ /^\s*(struct|union)\s*(\w+)?/) {
+			$pkg = $1 eq "union" ? "UnionType" : "StructType";
+			if(defined $braces[0]) {
+				my $contents = substr($typeString, $braces[0], $braces[1] - $braces[0] - 1);
+				# Erase struct declaration.
+				substr($typeString, $braces[0]-1, $braces[1] - $braces[0] + 1) = "";
+
+				my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
+				$type->{CONTENTS} = [map {_parseTypeString($_);} @subTypeStrings];
+			} else {
+				$type->{STRUCTNAME} = $2;
+			}
+		} else {
+			$pkg = "PlainType";
+
+			# If our type string is of the sort 'TYPE NAME', pull out the name.
+			if($typeString =~ /\s+(\w+)$/p) {
+				$typeString = ${^PREMATCH};
+				$type->{NAME} = $1;
+			}
+			$type->{TYPE} = $typeString;
+		}
+		bless $type, $pkg;
 	}
 
-	return $typeRef;
+	return $type;
 }
 
 # Parentheses are considered unnecessary if they are not followed by
@@ -163,13 +149,17 @@ package PointerType; # INNER_TYPE
 use strict;
 use warnings;
 use parent qw(Type);
-use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Pointer(".($s->{INNER_TYPE}//"Nothing").")"; };
+use overload '""' => sub {
+	my $s = shift;
+	return ($s->{NAME} ? $s->{NAME}.":":"").$s->_typeForStringify."(".($s->{INNER_TYPE}//"Nothing").")";
+};
+sub _typeForStringify { return "Pointer"; }
 1;
-package BlockType; # (see _FunctionType)
+package BlockPointerType; # (see _FunctionType)
 use strict;
 use warnings;
-use parent qw(Type);
-use overload '""' => sub { my $s = shift; return ($s->{NAME} ? $s->{NAME}.":":"")."Block[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")"; };
+our @ISA = qw(PointerType);
+sub _typeForStringify { return "BlockPointer"; }
 1;
 package FunctionType; # RETURN_TYPE ARGUMENTS
 use strict;

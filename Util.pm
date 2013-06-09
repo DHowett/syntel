@@ -4,7 +4,7 @@ use warnings;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(matchedDelimiterSet matchedParenthesisSet smartSplit);
+our @EXPORT_OK = qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 
 sub expr {
 	my $val = shift;
