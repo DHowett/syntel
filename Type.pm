@@ -51,16 +51,8 @@ sub _parseTypeString {
 		);
 
 		$typeString = substr($typeString, 0, $parens[0]-1).substr($typeString, $parens[3]);
-		my $returnType = _parseTypeString($typeString);
 		# If we bear a passed inner type, it's probably our return type.
-		if($passedInnerType) {
-			my $n = \$returnType;
-			while($$n) {
-				$n = \${$n}->{INNER_TYPE};
-			}
-			$$n = $passedInnerType;
-		}
-		$type->{RETURN_TYPE} = $returnType;
+		$type->{RETURN_TYPE} = _parseTypeString($typeString, $passedInnerType);
 
 		my @argStrings = smartSplit(qr/\s*,\s*/, $right);
 		#print STDERR join("!", @argStrings),$/;
