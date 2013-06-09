@@ -87,8 +87,9 @@ sub _parseTypeString {
 				$innerType->{_POINTER_TYPE} = $type if $pkg eq "PointerType";
 				$type->{INNER_TYPE} = $innerType;
 			}
-		} elsif($typeString =~ /^\s*(struct|union)\s*(\w+)?/) {
+		} elsif($typeString =~ /^\s*(struct|union)\s*(\w+)?\s*{?/) {
 			$pkg = $1 eq "union" ? "UnionType" : "StructType";
+			$type->{STRUCTNAME} = $2;
 			if(defined $braces[0]) {
 				my $contents = substr($typeString, $braces[0], $braces[1] - $braces[0] - 1);
 				# Erase struct declaration.
@@ -96,8 +97,6 @@ sub _parseTypeString {
 
 				my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
 				$type->{CONTENTS} = [map {_parseTypeString($_);} @subTypeStrings];
-			} else {
-				$type->{STRUCTNAME} = $2;
 			}
 		} else {
 			$pkg = "PlainType";
@@ -214,9 +213,8 @@ our @ISA = qw(_TypeBase);
 sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify.
-		(defined $s->{CONTENTS}
-			? "{".join(",", map {"".$_} @{$s->{CONTENTS}})."}"
-			: "(\"".$s->{STRUCTNAME}."\")");
+		(defined $s->{STRUCTNAME} ? "(\"".$s->{STRUCTNAME}."\")" : "").
+			"{".join(",", map {"".$_} @{$s->{CONTENTS}})."}";
 };
 1;
 
