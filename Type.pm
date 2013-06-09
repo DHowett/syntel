@@ -110,7 +110,10 @@ sub _parseTypeString {
 			if($typeString =~ /\s+(\w+)$/p) {
 				$typeString = ${^PREMATCH};
 				$type->{NAME} = $1;
+			} elsif($typeString eq "...") {
+				$pkg = "VarargType";
 			}
+
 			$type->{TYPE} = $typeString;
 		}
 		bless $type, $pkg;
@@ -233,4 +236,10 @@ sub _stringify {
 	my $s = shift;
 	return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}).($s->{PACKED_BITS} ? "*".$s->{PACKED_BITS} : "");
 }
+1;
+
+package VarargType;
+use strict;
+use warnings;
+our @ISA = qw(_TypeBase);
 1;
