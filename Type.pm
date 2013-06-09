@@ -8,18 +8,34 @@ use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
-	return _parseTypeString($typeName);
+	if($pkg eq __PACKAGE__) {
+		my $typeName = shift;
+		return _parseTypeString($typeName);
+	}
+	return bless {}, $pkg;
+}
+
+sub pointer {
+	my $self = shift;
+	my $ptr = $self->{_POINTER_TYPE};
+	if(!defined $ptr) {
+		$ptr = ($self->{_POINTER_TYPE} = PointerType->new());
+		$ptr->{INNER_TYPE} = $self;
+	}
+	return $ptr;
 }
 
 sub _parseTypeString {
 	my $typeString = _stripUnnecessaryParens(shift);
 	my $passedInnerType = shift;
-	my $type = {};
-	#$type->{INNER_TYPE} = $innerType if defined $innerType;
 
 	$typeString =~ s/\s+/ /;
 	$typeString =~ s/^\s+//;
 	$typeString =~ s/\s+$//;
+
+	return undef if $typeString eq "";
+
+	my $type = {};
 
 	my @braces = matchedDelimiterSet($typeString, "{", "}");
 	my @parens = matchedDelimiterSet($typeString, "(", ")");
@@ -52,7 +68,6 @@ sub _parseTypeString {
 		# Descend left iff there's a righthand side. We might need to nest within it.
 
 		$type = _parseTypeString($left, $type);
-		return $type;
 	} else {
 		my $pkg = undef;
 		# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
@@ -76,8 +91,10 @@ sub _parseTypeString {
 
 			# If we have a subtype string, we might need to nest *our* inner type inside it.
 			my $innerType = $newType ? _parseTypeString($newType, $passedInnerType) : $passedInnerType;
-
-			$type->{INNER_TYPE} = $innerType;
+			if($innerType) {
+				$innerType->{_POINTER_TYPE} = $type if $pkg eq "PointerType";
+				$type->{INNER_TYPE} = $innerType;
+			}
 		} elsif($typeString =~ /^\s*(struct|union)\s*(\w+)?/) {
 			$pkg = $1 eq "union" ? "UnionType" : "StructType";
 			if(defined $braces[0]) {
