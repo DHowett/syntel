@@ -102,6 +102,11 @@ sub _parseTypeString {
 		} else {
 			$pkg = "PlainType";
 
+			if($typeString =~ /\s*:\s*(\d+)$/p) {
+				$typeString = ${^PREMATCH};
+				$type->{PACKED_BITS} = $1;
+			}
+
 			# If our type string is of the sort 'TYPE NAME', pull out the name.
 			if($typeString =~ /\s+(\w+)$/p) {
 				$typeString = ${^PREMATCH};
@@ -221,13 +226,13 @@ use warnings;
 our @ISA = qw(StructType);
 1;
 
-package PlainType; # TYPE
+package PlainType; # TYPE PACKED_BITS
 use strict;
 use warnings;
 our @ISA = qw(_TypeBase);
 
 sub _stringify {
 	my $s = shift;
-	return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE});
+	return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}).($s->{PACKED_BITS} ? "*".$s->{PACKED_BITS} : "");
 }
 1;
