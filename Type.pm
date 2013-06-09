@@ -89,7 +89,14 @@ sub _parseTypeString {
 			}
 		} elsif($typeString =~ /^\s*(struct|union)\s*(\w+)?\s*{?/) {
 			$pkg = $1 eq "union" ? "UnionType" : "StructType";
-			$type->{STRUCTNAME} = $2;
+			my $structname = $2;
+			$type->{STRUCTNAME} = $structname;
+
+			if(($structname && $typeString =~ /$structname\s+(\w+)$/)
+			 || $typeString =~ /}\s*(\w+)$/) {
+				$type->{NAME} = $1;
+			}
+
 			if(defined $braces[0]) {
 				my $contents = substr($typeString, $braces[0], $braces[1] - $braces[0] - 1);
 				# Erase struct declaration.
