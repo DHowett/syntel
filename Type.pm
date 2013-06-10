@@ -17,6 +17,7 @@ our $DOUBLE = __PACKAGE__->new("double");
 our $SIGNED = __PACKAGE__->new("signed");
 our $UNSIGNED = __PACKAGE__->new("unsigned");
 our $BOOL = __PACKAGE__->new("bool");
+our $VARARGS = __PACKAGE__->new("...");
 
 sub new {
 	my $proto = shift;
