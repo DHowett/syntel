@@ -204,7 +204,9 @@ sub _leftRight {
 package _TypeBase;
 use strict;
 use warnings;
-use overload '""' => "_stringify";
+my $printContext = { };
+my $printDepth = 0;
+use overload '""' => sub { my $s = shift; $printDepth++; my $str = $s->_stringify($printContext); $printDepth--; $printContext = {} if $printDepth == 0; $str; };
 our @ISA = qw(Type);
 
 sub _stringify {
@@ -261,9 +263,12 @@ our @ISA = qw(_TypeBase);
 
 sub _stringify {
 	my $s = shift;
+	my $printContext = shift;
+	my $ck = Scalar::Util::refaddr($s);
+	$printContext->{$ck}++;
 	return $s->SUPER::_stringify.
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
-			"{".join(",", map {"".$_} @{$s->{MEMBERS}})."}";
+			"{".($printContext->{$ck} <= 1 ? join(",", map {"".$_} @{$s->{MEMBERS}}) : "--")."}";
 };
 1;
 
