@@ -45,7 +45,7 @@ sub new {
 }
 
 sub _parseTypeString {
-	my $typeString = _stripUnnecessaryParens(shift);
+	my $typeString = shift;
 	my $passedInnerType = shift;
 	my $typeName = undef;
 
@@ -80,6 +80,17 @@ sub _parseTypeString {
 		# Descend left iff there's a righthand side. We might need to nest within it.
 
 		($type, $typeName) = _parseTypeString($left, $type);
+	} elsif(@parens > 1 && !fallsBetween($parens[1], @braces)) {
+		my $inner = substr($typeString, $parens[0], $parens[1]-$parens[0]-1);
+		$typeString = substr($typeString, 0, $parens[0]-1).substr($typeString, $parens[1]);
+
+		# The inner type (type outside the parentheses, because C is backwards)
+		# is either the type outside the parens, OR the type we were passed
+		# to be OUR inner type.
+
+		# We wrap it in the type we found inside the parentheses.
+		my $innerType = $typeString ? scalar _parseTypeString($typeString, $passedInnerType) : $passedInnerType;
+		($type, $typeName) = _parseTypeString($inner, $innerType);
 	} else {
 		my $pkg = undef;
 		# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
