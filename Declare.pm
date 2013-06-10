@@ -14,7 +14,9 @@ sub new {
 
 sub emit {
 	my $self = shift;
-	my $r = $self->{VARIABLE}->{TYPE}." ".$self->{VARIABLE}->{NAME};
+	my $type = $self->{VARIABLE}->DOES("Type") ? $self->{VARIABLE} : $self->{VARIABLE}->{TYPE};
+	my $name = $self->{VARIABLE}->DOES("Type") ? undef : $self->{VARIABLE}->{NAME};
+	my $r = $type->declString($name);
 	if(defined $self->{EXPR}) {
 		$r .= " = ".Util::expr($self->{EXPR});
 	}

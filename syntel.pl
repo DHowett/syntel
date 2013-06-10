@@ -12,25 +12,26 @@ use String;
 use BinaryOperator;
 use PrefixOperator;
 use While;
+use Type;
 
 my $root = Context->new();
-my $x = Variable->new("x", "int");
-my $y = Variable->new("y", "int");
+my $x = Variable->new("x", $Type::INT);
+my $y = Variable->new("y", $Type::INT);
 $root->push($x->declaration);
 $root->push($y->declaration);
 
-my $mul = Function->new("multiply", "int", [Variable->new("_x", "int"), Variable->new("_y", "int")]);
+my $mul = Function->new("multiply", $Type::INT, [Variable->new("_x", $Type::INT), Variable->new("_y", $Type::INT)]);
 $mul->push(Return->new(BinaryOperator->new($mul->param(0), "*", $mul->param(1))));
 $root->push($mul);
 
-my $f = Function->new("whatever", "int", []);
+my $f = Function->new("whatever", $Type::INT, []);
 $f->defer(Return->new(32));
 $root->push($f);
 
-my $printf = Function->new("printf", "int", [Variable->new("fmt", "char *"), Vararg->new()]);
+my $printf = Function->new("printf", $Type::INT, [Variable->new("fmt", $Type::CHAR->pointer), Vararg->new()]);
 $root->push($printf->prototype);
 
-my $main = Function->new("main", "int", [Variable->new("argc", "int"), Variable->new("argv", "char**")]);
+my $main = Function->new("main", $Type::INT, [Variable->new("argc", $Type::INT), Variable->new("argv", $Type::CHAR->pointer->array)]);
 $main->defer(Return->new($y));
 $main->push($x->assign(ConstantValue->new(10)));
 $main->push($y->assign($f->call()));
@@ -38,11 +39,12 @@ my $printcall = $printf->call(String->new("x == %d, y == %d\n"), $x, $y);
 $main->push($printcall);
 $main->defer($printcall);
 $main->push($printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
+$main->push($printf->call(String->new("xp = %p\n"), $x->pointer));
 $main->push($x->assign($y));
 
 {
 	my $block = BlockContext->new();
-	my $i = Variable->new("i", "int");
+	my $i = Variable->new("i", $Type::INT);
 	$block->push($i->declaration(10));
 
 	my $iprint = $printf->call(String->new("i = %d "), $i);

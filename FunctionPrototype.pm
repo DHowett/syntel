@@ -13,18 +13,17 @@ sub new {
 
 sub emit {
 	my $self = shift;
-	my $r = "";
-	$r .= $self->{FUNCTION}->{RETURN}." ".$self->{FUNCTION}->{NAME};
-	$r .= "(";
+	my $i = $self->{FUNCTION}->{NAME};
+	$i .= "(";
 	if(defined $self->{FUNCTION}->{PARAMETERS}) {
 		if(scalar @{$self->{FUNCTION}->{PARAMETERS}} > 0) {
-			$r .= join(",", map {$_->declaration()->emit()} @{$self->{FUNCTION}->{PARAMETERS}});
+			$i .= join(",", map {$_->declaration()->emit()} @{$self->{FUNCTION}->{PARAMETERS}});
 		} else {
-			$r .= "void";
+			$i .= "void";
 		}
 	}
-	$r .= ")";
-	return $r;
+	$i .= ")";
+	return $self->{FUNCTION}->{RETURN_TYPE}->declString($i);
 }
 
 1;

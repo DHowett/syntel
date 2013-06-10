@@ -19,7 +19,7 @@ sub new {
 
 	my $self = $pkg->SUPER::new(@_);
 	$self->{NAME} = $name;
-	$self->{RETURN} = $return;
+	$self->{RETURN_TYPE} = $return;
 	$self->{PARAMETERS} = $parameters;
 	$self->{PROTOTYPE} = FunctionPrototype->new($self);
 	return bless $self, $pkg
