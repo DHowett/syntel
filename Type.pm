@@ -28,6 +28,7 @@ sub pointer {
 sub _parseTypeString {
 	my $typeString = _stripUnnecessaryParens(shift);
 	my $passedInnerType = shift;
+	my $typeName = undef;
 
 	$typeString =~ s/\s+/ /;
 	$typeString =~ s/^\s+//;
@@ -52,21 +53,21 @@ sub _parseTypeString {
 
 		$typeString = substr($typeString, 0, $parens[0]-1).substr($typeString, $parens[3]);
 		# If we bear a passed inner type, it's probably our return type.
-		$type->{RETURN_TYPE} = _parseTypeString($typeString, $passedInnerType);
+		$type->{RETURN_TYPE} = scalar _parseTypeString($typeString, $passedInnerType);
 
 		my @argStrings = smartSplit(qr/\s*,\s*/, $right);
 		#print STDERR join("!", @argStrings),$/;
-		$type->{ARGUMENTS} = [map {_parseTypeString($_);} @argStrings];
+		$type->{ARGUMENTS} = [map {scalar _parseTypeString($_);} @argStrings];
 		# Descend left iff there's a righthand side. We might need to nest within it.
 
-		$type = _parseTypeString($left, $type);
+		($type, $typeName) = _parseTypeString($left, $type);
 	} else {
 		my $pkg = undef;
 		# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
 		# pull NAME out and leave the rest unmolested.
 		# This is also valid for TYPE *NAME[ and TYPE ^NAME
 		if($typeString =~ /[\^\*](\w+)(\[\d*\])?$/) {
-			$type->{NAME} = $1;
+			$typeName = $1;
 			substr($typeString, $-[1], $+[1] - $-[1]) = "";
 		}
 
@@ -82,7 +83,7 @@ sub _parseTypeString {
 			}
 
 			# If we have a subtype string, we might need to nest *our* inner type inside it.
-			my $innerType = $newType ? _parseTypeString($newType, $passedInnerType) : $passedInnerType;
+			my $innerType = $newType ? scalar _parseTypeString($newType, $passedInnerType) : $passedInnerType;
 			if($innerType) {
 				$innerType->{_POINTER_TYPE} = $type if $pkg eq "PointerType";
 				$type->{INNER_TYPE} = $innerType;
@@ -90,11 +91,11 @@ sub _parseTypeString {
 		} elsif($typeString =~ /^\s*(struct|union|enum)\s*(\w+)?\s*{?/) {
 			$pkg = ucfirst($1)."Type";
 			my $structname = $2;
-			$type->{STRUCTNAME} = $structname;
+			$type->{NAME} = $structname;
 
 			if(($structname && $typeString =~ /$structname\s+(\w+)$/)
 			 || $typeString =~ /}\s*(\w+)$/) {
-				$type->{NAME} = $1;
+				$typeName = $1;
 			}
 
 			if(defined $braces[0]) {
@@ -104,7 +105,11 @@ sub _parseTypeString {
 
 				if($pkg ne "EnumType") {
 					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
-					$type->{CONTENTS} = [map {_parseTypeString($_);} @subTypeStrings];
+					$type->{CONTENTS} = [map {
+							my $m = bless {}, "_StructMember";
+							($m->{TYPE}, $m->{NAME}) = _parseTypeString($_, undef, 1);
+							$m;
+						} @subTypeStrings];
 				} else {
 					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
 					$type->{CONTENTS} = [map {_parseEnumValueString($_);} @subTypeStrings];
@@ -121,7 +126,7 @@ sub _parseTypeString {
 			# If our type string is of the sort 'TYPE NAME', pull out the name.
 			if($typeString =~ /\s+(\w+)$/p) {
 				$typeString = ${^PREMATCH};
-				$type->{NAME} = $1;
+				$typeName = $1;
 			} elsif($typeString eq "...") {
 				$pkg = "VarargType";
 			}
@@ -131,6 +136,7 @@ sub _parseTypeString {
 		bless $type, $pkg;
 	}
 
+	return ($type, $typeName) if wantarray;
 	return $type;
 }
 
@@ -177,7 +183,7 @@ sub _leftRight {
 
 1;
 
-package _TypeBase; # NAME
+package _TypeBase;
 use strict;
 use warnings;
 use overload '""' => "_stringify";
@@ -187,7 +193,7 @@ sub _stringify {
 	my $self = shift;
 	my $pkg = blessed $self;
 	$pkg =~ s/(\w+)Type$/$1/;
-	return ($self->{NAME} ? $self->{NAME}.":" : "").$pkg;
+	return $pkg;
 }
 1;
 
@@ -230,7 +236,7 @@ sub _stringify {
 }
 1;
 
-package StructType; # CONTENTS
+package StructType; # NAME CONTENTS
 use strict;
 use warnings;
 our @ISA = qw(_TypeBase);
@@ -238,30 +244,43 @@ our @ISA = qw(_TypeBase);
 sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify.
-		(defined $s->{STRUCTNAME} ? "(\"".$s->{STRUCTNAME}."\")" : "").
+		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
 			"{".join(",", map {"".$_} @{$s->{CONTENTS}})."}";
 };
 1;
 
-package UnionType;
+package UnionType; # See StructType
 use strict;
 use warnings;
 our @ISA = qw(StructType);
 1;
 
-package EnumType;
+package _StructMember; # NAME TYPE
+use strict;
+use warnings;
+use overload '""' => sub { my $s = shift; return $s->{NAME}.":".$s->{TYPE}; };
+sub name {
+	my $s = shift; return $s->{NAME};
+}
+
+sub type {
+	my $s = shift; return $s->{TYPE};
+}
+1;
+
+package EnumType; # See StructType
 use strict;
 use warnings;
 our @ISA = qw(StructType);
 sub _stringify {
 	my $s = shift;
 	return $s->_TypeBase::_stringify.
-		(defined $s->{STRUCTNAME} ? "(\"".$s->{STRUCTNAME}."\")" : "").
+		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
 			"{".(scalar @{$s->{CONTENTS}})." values}";
 };
 1;
 
-package _EnumValue;
+package _EnumValue; # NAME VALUE
 use strict;
 use warnings;
 1;
