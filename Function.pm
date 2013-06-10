@@ -31,6 +31,14 @@ sub new {
 	return bless $self, $pkg
 }
 
+sub name {
+	return $_[0]->{NAME};
+}
+
+sub returnType {
+	return $_[0]->{RETURN_TYPE};
+}
+
 sub prototype {
 	my $self = shift;
 	return $self->{PROTOTYPE}

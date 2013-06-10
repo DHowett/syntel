@@ -14,6 +14,10 @@ sub new {
 	return bless $self, $pkg
 }
 
+sub type {
+	return $_->{FUNCTION}->returnType;
+}
+
 sub expr {
 	my $self = shift;
 	my $r = $self->{FUNCTION}->{NAME}."(";

@@ -15,6 +15,14 @@ sub new {
 	return bless $self, $pkg
 }
 
+sub name {
+	return $_[0]->{NAME};
+}
+
+sub type {
+	return $_[0]->{TYPE};
+}
+
 sub declaration {
 	my $self = shift;
 	return Declare->new($self);
@@ -27,7 +35,7 @@ sub assign {
 
 sub expr {
 	my $self = shift;
-	return $self->{NAME};
+	return $self->name;
 }
 
 # emit: handled by Expression
