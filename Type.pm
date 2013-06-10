@@ -3,7 +3,19 @@ use strict;
 use warnings;
 use Scalar::Util qw(blessed);
 
-our %_typeCache;
+our %_typeCache = (
+	void		=>	PlainType->new("void"),
+	char		=>	PlainType->new("char"),
+	short		=>	PlainType->new("short"),
+	int		=>	PlainType->new("int"),
+	long		=>	PlainType->new("long"),
+	float		=>	PlainType->new("float"),
+	double		=>	PlainType->new("double"),
+	signed		=>	PlainType->new("signed"),
+	unsigned	=>	PlainType->new("unsigned"),
+	bool		=>	PlainType->new("bool"),
+	"..."		=>	VarargType->new(),
+);
 
 use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 
@@ -19,6 +31,7 @@ our $UNSIGNED = __PACKAGE__->new("unsigned");
 our $BOOL = __PACKAGE__->new("bool");
 our $VARARGS = __PACKAGE__->new("...");
 
+# May not return a new instance.
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
@@ -29,24 +42,6 @@ sub new {
 		return $_typeCache{$cacheKey} = scalar _parseTypeString($typeName);
 	}
 	return bless {}, $pkg;
-}
-
-sub pointer {
-	my $self = shift;
-	my $ptr = $self->{_POINTER_TYPE};
-	if(!defined $ptr) {
-		$ptr = ($self->{_POINTER_TYPE} = PointerType->new());
-		$ptr->{INNER_TYPE} = $self;
-	}
-	return $ptr;
-}
-
-sub array {
-	my $self = shift;
-	my $arr = ArrayType->new();
-	$arr->{LENGTH} = shift;
-	$arr->{INNER_TYPE} = $self;
-	return $arr;
 }
 
 sub _parseTypeString {
@@ -227,11 +222,10 @@ use warnings;
 my $printContext = { };
 my $printDepth = 0;
 use overload '""' => sub { my $s = shift; $printDepth++; my $str = $s->_stringify($printContext); $printDepth--; $printContext = {} if $printDepth == 0; $str; };
-our @ISA = qw(Type);
+use parent -norequire, "Type";
 
 sub DOES {
-	my $self = shift;
-	my $does = shift;
+	my ($self, $does) = @_;
 	return 1 if $does eq "Statement";
 	return $self->SUPER::DOES($does);
 }
@@ -241,6 +235,27 @@ sub _stringify {
 	my $pkg = blessed $self;
 	$pkg =~ s/(\w+)Type$/$1/;
 	return $pkg;
+}
+
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	return bless {}, $pkg;
+}
+
+sub pointer {
+	my $self = shift;
+	my $ptr = $self->{_POINTER_TYPE};
+	if(!defined $ptr) {
+		$ptr = ($self->{_POINTER_TYPE} = PointerType->new($self));
+	}
+	return $ptr;
+}
+
+sub array {
+	my $self = shift;
+	my $arr = ArrayType->new($self, shift);
+	return $arr;
 }
 
 sub declaration {
@@ -257,11 +272,20 @@ sub emit {
 package ArrayType; # LENGTH
 use strict;
 use warnings;
-our @ISA = qw(_TypeBase);
+use parent -norequire, "_TypeBase";
 
 sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify."[".($s->{LENGTH}//"")."](".($s->{INNER_TYPE}//"Nothing").")";
+}
+
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	my $self = $pkg->SUPER::new();
+	$self->{INNER_TYPE} = shift;
+	$self->{LENGTH} = shift;
+	return bless $self, $pkg;
 }
 
 sub declString {
@@ -274,11 +298,19 @@ sub declString {
 package PointerType; # INNER_TYPE
 use strict;
 use warnings;
-our @ISA = qw(_TypeBase);
+use parent -norequire, "_TypeBase";
 
 sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify."(".($s->{INNER_TYPE}//"Nothing").")";
+}
+
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	my $self = $pkg->SUPER::new();
+	$self->{INNER_TYPE} = shift;
+	return bless $self, $pkg;
 }
 
 sub declString {
@@ -291,7 +323,7 @@ sub declString {
 package BlockPointerType; # (see _FunctionType)
 use strict;
 use warnings;
-our @ISA = qw(PointerType);
+use parent -norequire, "PointerType";
 
 sub declString {
 	my $self = shift;
@@ -303,11 +335,20 @@ sub declString {
 package FunctionType; # RETURN_TYPE ARGUMENTS
 use strict;
 use warnings;
-our @ISA = qw(_TypeBase);
+use parent -norequire, "_TypeBase";
 
 sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify."[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")";
+}
+
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	my $self = $pkg->SUPER::new();
+	$self->{RETURN_TYPE} = shift;
+	$self->{ARGUMENTS} = shift;
+	return bless $self, $pkg;
 }
 
 sub declString {
@@ -320,7 +361,7 @@ sub declString {
 package StructType; # NAME MEMBERS
 use strict;
 use warnings;
-our @ISA = qw(_TypeBase);
+use parent -norequire, "_TypeBase";
 
 sub _stringify {
 	my $s = shift;
@@ -331,6 +372,15 @@ sub _stringify {
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
 			"{".($printContext->{$ck} <= 1 ? join(",", map {"".$_} @{$s->{MEMBERS}}) : "--")."}";
 };
+
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	my $self = $pkg->SUPER::new();
+	$self->{NAME} = shift;
+	$self->{MEMBERS} = shift;
+	return bless $self, $pkg;
+}
 
 sub declString {
 	my $self = shift;
@@ -361,7 +411,7 @@ sub _declStringContents {
 package UnionType; # See StructType
 use strict;
 use warnings;
-our @ISA = qw(StructType);
+use parent -norequire, "StructType";
 1;
 
 package _StructMember; # NAME TYPE
@@ -380,7 +430,7 @@ sub type {
 package EnumType; # See StructType
 use strict;
 use warnings;
-our @ISA = qw(StructType);
+use parent -norequire, "StructType";
 sub _stringify {
 	my $s = shift;
 	return $s->_TypeBase::_stringify.
@@ -402,11 +452,19 @@ use warnings;
 package PlainType; # TYPE PACKED_BITS
 use strict;
 use warnings;
-our @ISA = qw(_TypeBase);
+use parent -norequire, "_TypeBase";
 
 sub _stringify {
 	my $s = shift;
 	return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}).($s->{PACKED_BITS} ? "*".$s->{PACKED_BITS} : "");
+}
+
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	my $self = $pkg->SUPER::new();
+	$self->{TYPE} = shift;
+	return bless $self, $pkg;
 }
 
 sub declString {
@@ -421,7 +479,7 @@ sub declString {
 package VarargType;
 use strict;
 use warnings;
-our @ISA = qw(_TypeBase);
+use parent -norequire, "_TypeBase";
 
 sub declString {
 	return "...";
