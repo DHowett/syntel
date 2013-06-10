@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use Scalar::Util qw(blessed);
 
+our %_typeCache;
+
 use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 
 sub new {
@@ -10,7 +12,9 @@ sub new {
 	my $pkg = ref $proto || $proto;
 	if($pkg eq __PACKAGE__) {
 		my $typeName = shift;
-		return _parseTypeString($typeName);
+		(my $cacheKey = $typeName) =~ s/\s+/ /g;
+		return $_typeCache{$cacheKey} if defined $_typeCache{$cacheKey};
+		return $_typeCache{$cacheKey} = scalar _parseTypeString($typeName);
 	}
 	return bless {}, $pkg;
 }
@@ -89,6 +93,7 @@ sub _parseTypeString {
 				$type->{INNER_TYPE} = $innerType;
 			}
 		} elsif($typeString =~ /^\s*(struct|union|enum)\s*(\w+)?\s*{?/) {
+			my $cacheKey = $1;
 			$pkg = ucfirst($1)."Type";
 			my $structname = $2;
 			$type->{NAME} = $structname;
@@ -98,29 +103,38 @@ sub _parseTypeString {
 				$typeName = $1;
 			}
 
+			if($structname) {
+				$cacheKey .= " ".$structname;
+				$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
+				$_typeCache{$cacheKey} = $type;
+			}
+
 			if(defined $braces[0]) {
 				my $contents = substr($typeString, $braces[0], $braces[1] - $braces[0] - 1);
-				# Erase struct declaration.
-				substr($typeString, $braces[0]-1, $braces[1] - $braces[0] + 1) = "";
 
+				my @subTypeStrings;
+				my @members;
 				if($pkg ne "EnumType") {
-					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
-					$type->{MEMBERS} = [map {
+					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
+					@members = map {
 							my $m = bless {}, "_StructMember";
 							($m->{TYPE}, $m->{NAME}) = _parseTypeString($_, undef, 1);
 							$m;
-						} @subTypeStrings];
+						} @subTypeStrings;
 				} else {
-					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
-					$type->{MEMBERS} = [map {_parseEnumValueString($_);} @subTypeStrings];
+					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
+					@members = map {_parseEnumValueString($_);} @subTypeStrings;
 				}
+				$type->{MEMBERS} = \@members if(scalar @members > 0)
 			}
 		} else {
 			$pkg = "PlainType";
+			my $cacheKey = "";
 
 			if($typeString =~ /\s*:\s*(\d+)$/p) {
 				$typeString = ${^PREMATCH};
 				$type->{PACKED_BITS} = $1;
+				$cacheKey = ":$1";
 			}
 
 			# If our type string is of the sort 'TYPE NAME', pull out the name.
@@ -130,8 +144,12 @@ sub _parseTypeString {
 			} elsif($typeString eq "...") {
 				$pkg = "VarargType";
 			}
+			$cacheKey = $typeString.$cacheKey;
 
 			$type->{TYPE} = $typeString;
+
+			$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
+			$_typeCache{$cacheKey} = $type;
 		}
 		bless $type, $pkg;
 	}
