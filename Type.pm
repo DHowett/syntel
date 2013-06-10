@@ -245,6 +245,12 @@ sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify."[".($s->{LENGTH}//"")."](".($s->{INNER_TYPE}//"Nothing").")";
 }
+
+sub declString {
+	my $self = shift;
+	my $name = shift//"";
+	return $self->{INNER_TYPE}->declString($name."[".($self->{LENGTH}//"")."]");
+}
 1;
 
 package PointerType; # INNER_TYPE
@@ -256,12 +262,24 @@ sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify."(".($s->{INNER_TYPE}//"Nothing").")";
 }
+
+sub declString {
+	my $self = shift;
+	my $name = shift//"";
+	return $self->{INNER_TYPE}->declString("*".$name);
+}
 1;
 
 package BlockPointerType; # (see _FunctionType)
 use strict;
 use warnings;
 our @ISA = qw(PointerType);
+
+sub declString {
+	my $self = shift;
+	my $name = shift//"";
+	return $self->{INNER_TYPE}->declString("^".$name);
+}
 1;
 
 package FunctionType; # RETURN_TYPE ARGUMENTS
@@ -272,6 +290,12 @@ our @ISA = qw(_TypeBase);
 sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify."[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")";
+}
+
+sub declString {
+	my $self = shift;
+	my $name = shift//"";
+	return $self->{RETURN_TYPE}->declString("(".$name.")(".join(",", map {$_->declString()} @{$self->{ARGUMENTS}}).")");
 }
 1;
 
@@ -289,6 +313,31 @@ sub _stringify {
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
 			"{".($printContext->{$ck} <= 1 ? join(",", map {"".$_} @{$s->{MEMBERS}}) : "--")."}";
 };
+
+sub declString {
+	my $self = shift;
+	my $name = shift//"";
+	my $t = lc(blessed $self);
+	$t =~ s/(\w+)type$/$1/;
+	$t .= " ";
+
+	if($self->{NAME}) {
+		$t .= $self->{NAME};
+	}
+
+	if(!$self->{NAME} || $name eq "") {
+		$t .= "{".$self->_declStringContents."}";
+	}
+
+	$t .= " ".$name;
+	$t =~ s/(^\s+|\s+$)//g;
+	return $t;
+}
+
+sub _declStringContents {
+	my $self = shift;
+	return join(";", map {$_->{TYPE}->declString($_->{NAME})} @{$self->{MEMBERS}}).";";
+}
 1;
 
 package UnionType; # See StructType
@@ -320,6 +369,11 @@ sub _stringify {
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
 			"{".(scalar @{$s->{MEMBERS}})." values}";
 };
+
+sub _declStringContents {
+	my $self = shift;
+	return join(",", map {$_->{NAME}.($_->{VALUE}?"=".$_->{VALUE}:"")} @{$self->{MEMBERS}});
+}
 1;
 
 package _EnumValue; # NAME VALUE
@@ -336,10 +390,22 @@ sub _stringify {
 	my $s = shift;
 	return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}).($s->{PACKED_BITS} ? "*".$s->{PACKED_BITS} : "");
 }
+
+sub declString {
+	my $self = shift;
+	my $name = shift//"";
+	my $t = $self->{TYPE}." ".$name;
+	$t =~ s/(^\s+|\s+$)//g;
+	return $t;
+}
 1;
 
 package VarargType;
 use strict;
 use warnings;
 our @ISA = qw(_TypeBase);
+
+sub declString {
+	return "...";
+}
 1;
