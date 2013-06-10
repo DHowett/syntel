@@ -7,6 +7,17 @@ our %_typeCache;
 
 use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 
+our $VOID = __PACKAGE__->new("void");
+our $CHAR = __PACKAGE__->new("char");
+our $SHORT = __PACKAGE__->new("short");
+our $INT = __PACKAGE__->new("int");
+our $LONG = __PACKAGE__->new("long");
+our $FLOAT = __PACKAGE__->new("float");
+our $DOUBLE = __PACKAGE__->new("double");
+our $SIGNED = __PACKAGE__->new("signed");
+our $UNSIGNED = __PACKAGE__->new("unsigned");
+our $BOOL = __PACKAGE__->new("bool");
+
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
