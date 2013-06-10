@@ -314,7 +314,9 @@ sub new {
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
-	return $self->{INNER_TYPE}->declString("*".$name);
+	$name = "*".$name;
+	$name = "(".$name.")" if $self->{INNER_TYPE}->isa("ArrayType");
+	return $self->{INNER_TYPE}->declString($name);
 }
 1;
 
