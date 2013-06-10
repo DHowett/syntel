@@ -105,14 +105,14 @@ sub _parseTypeString {
 
 				if($pkg ne "EnumType") {
 					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
-					$type->{CONTENTS} = [map {
+					$type->{MEMBERS} = [map {
 							my $m = bless {}, "_StructMember";
 							($m->{TYPE}, $m->{NAME}) = _parseTypeString($_, undef, 1);
 							$m;
 						} @subTypeStrings];
 				} else {
 					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
-					$type->{CONTENTS} = [map {_parseEnumValueString($_);} @subTypeStrings];
+					$type->{MEMBERS} = [map {_parseEnumValueString($_);} @subTypeStrings];
 				}
 			}
 		} else {
@@ -236,7 +236,7 @@ sub _stringify {
 }
 1;
 
-package StructType; # NAME CONTENTS
+package StructType; # NAME MEMBERS
 use strict;
 use warnings;
 our @ISA = qw(_TypeBase);
@@ -245,7 +245,7 @@ sub _stringify {
 	my $s = shift;
 	return $s->SUPER::_stringify.
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
-			"{".join(",", map {"".$_} @{$s->{CONTENTS}})."}";
+			"{".join(",", map {"".$_} @{$s->{MEMBERS}})."}";
 };
 1;
 
@@ -276,7 +276,7 @@ sub _stringify {
 	my $s = shift;
 	return $s->_TypeBase::_stringify.
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
-			"{".(scalar @{$s->{CONTENTS}})." values}";
+			"{".(scalar @{$s->{MEMBERS}})." values}";
 };
 1;
 
