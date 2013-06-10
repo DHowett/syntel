@@ -40,6 +40,14 @@ sub pointer {
 	return $ptr;
 }
 
+sub array {
+	my $self = shift;
+	my $arr = ArrayType->new();
+	$arr->{LENGTH} = shift;
+	$arr->{INNER_TYPE} = $self;
+	return $arr;
+}
+
 sub _parseTypeString {
 	my $typeString = _stripUnnecessaryParens(shift);
 	my $passedInnerType = shift;
