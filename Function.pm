@@ -1,7 +1,7 @@
 package Function;
 use strict;
 use warnings;
-use parent qw(BlockContext);
+use parent qw(BlockContext Expression);
 
 use Scalar::Util;
 
@@ -46,6 +46,11 @@ sub call {
 	my $self = shift;
 	my @a = @_;
 	return FunctionCall->new($self, \@a);
+}
+
+sub expr {
+	my $self = shift;
+	return $self->{NAME};
 }
 
 sub emit {
