@@ -228,11 +228,28 @@ my $printDepth = 0;
 use overload '""' => sub { my $s = shift; $printDepth++; my $str = $s->_stringify($printContext); $printDepth--; $printContext = {} if $printDepth == 0; $str; };
 our @ISA = qw(Type);
 
+sub DOES {
+	my $self = shift;
+	my $does = shift;
+	return 1 if $does eq "Statement";
+	return $self->SUPER::DOES($does);
+}
+
 sub _stringify {
 	my $self = shift;
 	my $pkg = blessed $self;
 	$pkg =~ s/(\w+)Type$/$1/;
 	return $pkg;
+}
+
+sub declaration {
+	my $self = shift;
+	return $self;
+}
+
+sub emit {
+	my $self = shift;
+	return $self->declString();
 }
 1;
 
