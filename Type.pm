@@ -132,9 +132,8 @@ sub _parseTypeString {
 				if($pkg ne "EnumType") {
 					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
 					@members = map {
-							my $m = bless {}, "_StructMember";
-							($m->{TYPE}, $m->{NAME}) = _parseTypeString($_, undef, 1);
-							$m;
+							# _parseTypeString returns TYPE,NAME but we want NAME,TYPE.
+							StructMember->new(reverse _parseTypeString($_, undef, 1));
 						} @subTypeStrings;
 				} else {
 					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
@@ -177,10 +176,9 @@ sub _parseEnumValueString {
 	my $s = shift;
 	my $enumval = {};
 	if($s =~ /^\s*(\w+)(\s*=\s*(.*?)\s*)?$/) {
-		$enumval->{NAME} = $1;
-		$enumval->{VALUE} = $3 if $3;
+		return EnumValue->new($1, $3);
 	}
-	return bless $enumval, "_EnumValue";
+	return undef;
 }
 
 # Parentheses are considered unnecessary if they are not followed by
@@ -414,10 +412,20 @@ use warnings;
 use parent -norequire, "StructType";
 1;
 
-package _StructMember; # NAME TYPE
+package StructMember; # NAME TYPE
 use strict;
 use warnings;
 use overload '""' => sub { my $s = shift; return $s->{NAME}.":".$s->{TYPE}; };
+
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	my $self = {};
+	$self->{NAME} = shift;
+	$self->{TYPE} = shift;
+	return bless $self, $pkg;
+}
+
 sub name {
 	my $s = shift; return $s->{NAME};
 }
@@ -444,9 +452,26 @@ sub _declStringContents {
 }
 1;
 
-package _EnumValue; # NAME VALUE
+package EnumValue; # NAME VALUE
 use strict;
 use warnings;
+sub new {
+	my $proto = shift;
+	my $pkg = ref $proto || $proto;
+	my $self = {};
+	$self->{NAME} = shift;
+	$self->{VALUE} = shift;
+	return bless $self, $pkg;
+}
+
+sub name {
+	my $s = shift; return $s->{NAME};
+}
+
+sub value {
+	my $s = shift; return $s->{VALUE};
+}
+
 1;
 
 package PlainType; # TYPE PACKED_BITS
