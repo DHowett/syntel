@@ -87,8 +87,8 @@ sub _parseTypeString {
 				$innerType->{_POINTER_TYPE} = $type if $pkg eq "PointerType";
 				$type->{INNER_TYPE} = $innerType;
 			}
-		} elsif($typeString =~ /^\s*(struct|union)\s*(\w+)?\s*{?/) {
-			$pkg = $1 eq "union" ? "UnionType" : "StructType";
+		} elsif($typeString =~ /^\s*(struct|union|enum)\s*(\w+)?\s*{?/) {
+			$pkg = ucfirst($1)."Type";
 			my $structname = $2;
 			$type->{STRUCTNAME} = $structname;
 
@@ -102,8 +102,13 @@ sub _parseTypeString {
 				# Erase struct declaration.
 				substr($typeString, $braces[0]-1, $braces[1] - $braces[0] + 1) = "";
 
-				my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
-				$type->{CONTENTS} = [map {_parseTypeString($_);} @subTypeStrings];
+				if($pkg ne "EnumType") {
+					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
+					$type->{CONTENTS} = [map {_parseTypeString($_);} @subTypeStrings];
+				} else {
+					my @subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
+					$type->{CONTENTS} = [map {_parseEnumValueString($_);} @subTypeStrings];
+				}
 			}
 		} else {
 			$pkg = "PlainType";
@@ -127,6 +132,16 @@ sub _parseTypeString {
 	}
 
 	return $type;
+}
+
+sub _parseEnumValueString {
+	my $s = shift;
+	my $enumval = {};
+	if($s =~ /^\s*(\w+)(\s*=\s*(.*?)\s*)?$/) {
+		$enumval->{NAME} = $1;
+		$enumval->{VALUE} = $3 if $3;
+	}
+	return bless $enumval, "_EnumValue";
 }
 
 # Parentheses are considered unnecessary if they are not followed by
@@ -232,6 +247,23 @@ package UnionType;
 use strict;
 use warnings;
 our @ISA = qw(StructType);
+1;
+
+package EnumType;
+use strict;
+use warnings;
+our @ISA = qw(StructType);
+sub _stringify {
+	my $s = shift;
+	return $s->_TypeBase::_stringify.
+		(defined $s->{STRUCTNAME} ? "(\"".$s->{STRUCTNAME}."\")" : "").
+			"{".(scalar @{$s->{CONTENTS}})." values}";
+};
+1;
+
+package _EnumValue;
+use strict;
+use warnings;
 1;
 
 package PlainType; # TYPE PACKED_BITS
