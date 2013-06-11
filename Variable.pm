@@ -5,6 +5,8 @@ use parent qw(Expression LValue);
 
 use Declare;
 use Assign;
+use PrefixOperator;
+use Expression;
 
 sub new {
 	my $proto = shift;
@@ -31,6 +33,10 @@ sub declaration {
 sub assign {
 	my $self = shift;
 	return Assign->new($self, shift);
+}
+
+sub pointer {
+	return TypedExpression->new(PrefixOperator->new("&", $self), $self->type->pointer);
 }
 
 sub expr {
