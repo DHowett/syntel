@@ -1,7 +1,7 @@
-package BlockContext;
+package Syntel::BlockContext;
 use strict;
 use warnings;
-use parent qw(Context);
+use parent qw(Syntel::Context);
 
 sub emit {
 	my $self = shift;

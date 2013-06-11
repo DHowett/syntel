@@ -1,7 +1,7 @@
-package Declare;
+package Syntel::Declare;
 use strict;
 use warnings;
-use parent qw(Statement);
+use parent qw(Syntel::Statement);
 
 sub new {
 	my $proto = shift;
@@ -18,7 +18,7 @@ sub emit {
 	my $name = $self->{VARIABLE}->DOES("Type") ? undef : $self->{VARIABLE}->{NAME};
 	my $r = $type->declString($name);
 	if(defined $self->{EXPR}) {
-		$r .= " = ".Util::expr($self->{EXPR});
+		$r .= " = ".Syntel::Util::expr($self->{EXPR});
 	}
 	return $r;
 }

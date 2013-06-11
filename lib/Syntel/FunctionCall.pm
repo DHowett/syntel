@@ -1,9 +1,9 @@
-package FunctionCall;
+package Syntel::FunctionCall;
 use strict;
 use warnings;
-use parent qw(Expression);
+use parent qw(Syntel::Expression);
 
-use Util;
+use Syntel::Util;
 
 sub new {
 	my $proto = shift;
@@ -21,7 +21,7 @@ sub type {
 sub expr {
 	my $self = shift;
 	my $r = $self->{FUNCTION}->{NAME}."(";
-	$r .= join(",", map{Util::expr($_)} @{$self->{PARAMETERS}});
+	$r .= join(",", map{Syntel::Util::expr($_)} @{$self->{PARAMETERS}});
 	$r .= ")";
 	return $r;
 }

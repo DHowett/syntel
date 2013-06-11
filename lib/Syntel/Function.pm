@@ -1,13 +1,12 @@
-package Function;
+package Syntel::Function;
 use strict;
 use warnings;
-use parent qw(BlockContext);
+use parent qw(Syntel::BlockContext);
 
 use Scalar::Util;
 
-use BlockContext;
-use FunctionCall;
-use FunctionPrototype;
+use Syntel::FunctionCall;
+use Syntel::FunctionPrototype;
 
 sub DOES {
 	my ($self, $does) = @_;
@@ -27,7 +26,7 @@ sub new {
 	$self->{NAME} = $name;
 	$self->{RETURN_TYPE} = $return;
 	$self->{PARAMETERS} = $parameters;
-	$self->{PROTOTYPE} = FunctionPrototype->new($self);
+	$self->{PROTOTYPE} = Syntel::FunctionPrototype->new($self);
 	return bless $self, $pkg
 }
 
@@ -59,7 +58,7 @@ sub param {
 sub call {
 	my $self = shift;
 	my @a = @_;
-	return FunctionCall->new($self, \@a);
+	return Syntel::FunctionCall->new($self, \@a);
 }
 
 sub expr {

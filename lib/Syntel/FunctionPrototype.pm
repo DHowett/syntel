@@ -1,7 +1,7 @@
-package FunctionPrototype;
+package Syntel::FunctionPrototype;
 use strict;
 use warnings;
-use parent qw(Statement);
+use parent qw(Syntel::Statement);
 
 sub new {
 	my $proto = shift;

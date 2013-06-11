@@ -1,9 +1,9 @@
-package String;
+package Syntel::String;
 use strict;
 use warnings;
-use parent qw(ConstantValue LValue);
+use parent qw(Syntel::ConstantValue Syntel::LValue);
 
-use Type;
+use Syntel::Type;
 
 sub expr {
 	my $self = shift;
@@ -14,7 +14,7 @@ sub expr {
 }
 
 sub type {
-	return $Type::CHAR->pointer;
+	return $Syntel::Type::CHAR->pointer;
 }
 
 1;

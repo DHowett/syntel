@@ -1,12 +1,11 @@
-package Variable;
+package Syntel::Variable;
 use strict;
 use warnings;
-use parent qw(Expression LValue);
+use parent qw(Syntel::Expression Syntel::LValue);
 
-use Declare;
-use Assign;
-use PrefixOperator;
-use Expression;
+use Syntel::Declare;
+use Syntel::Assign;
+use Syntel::PrefixOperator;
 
 sub new {
 	my $proto = shift;
@@ -27,17 +26,17 @@ sub type {
 
 sub declaration {
 	my $self = shift;
-	return Declare->new($self);
+	return Syntel::Declare->new($self);
 }
 
 sub assign {
 	my $self = shift;
-	return Assign->new($self, shift);
+	return Syntel::Assign->new($self, shift);
 }
 
 sub pointer {
 	my $self = shift;
-	return PrefixOperator->new("&", $self)->typed($self->type->pointer);
+	return Syntel::PrefixOperator->new("&", $self)->typed($self->type->pointer);
 }
 
 sub expr {

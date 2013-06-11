@@ -1,7 +1,7 @@
-package While;
+package Syntel::While;
 use strict;
 use warnings;
-use parent qw(BlockContext);
+use parent qw(Syntel::BlockContext);
 
 sub DOES {
 	my $self = shift;
@@ -39,7 +39,7 @@ sub while {
 sub emit {
 	my $self = shift;
 	my $r = "";
-	my $whilebit = "while(".Util::expr($self->{EXPR}).")";
+	my $whilebit = "while(".Syntel::Util::expr($self->{EXPR}).")";
 	if($self->{DO}) {
 		$r .= "do";
 	} else {

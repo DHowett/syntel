@@ -1,4 +1,4 @@
-package Statement;
+package Syntel::Statement;
 use strict;
 use warnings;
 

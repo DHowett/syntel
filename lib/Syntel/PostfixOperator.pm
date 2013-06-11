@@ -1,9 +1,9 @@
-package PrefixOperator;
+package Syntel::PostfixOperator;
 use strict;
 use warnings;
-use parent qw(Expression);
+use parent qw(Syntel::Expression);
 
-use Util;
+use Syntel::Util;
 
 sub new {
 	my $proto = shift;
@@ -11,13 +11,13 @@ sub new {
 	my $self = {};
 	$self->{OP} = shift;
 	$self->{M1} = shift;
-	$self->{TYPE} = Util::type($self->{M1});
+	$self->{TYPE} = Syntel::Util::type($self->{M1});
 	return bless $self, $pkg
 }
 
 sub expr {
 	my $self = shift;
-	return $self->{OP}.Util::expr($self->{M1});
+	return Syntel::Util::expr($self->{M1}).$self->{OP};
 }
 
 # emit: handled by Expression

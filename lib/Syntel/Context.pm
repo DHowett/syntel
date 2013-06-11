@@ -1,4 +1,4 @@
-package Context;
+package Syntel::Context;
 use strict;
 use warnings;
 

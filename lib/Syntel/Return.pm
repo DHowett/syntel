@@ -1,9 +1,9 @@
-package Return;
+package Syntel::Return;
 use strict;
 use warnings;
-use parent qw(Statement);
+use parent qw(Syntel::Statement);
 
-use Util;
+use Syntel::Util;
 
 sub new {
 	my $proto = shift;
@@ -16,7 +16,7 @@ sub new {
 sub emit {
 	my $self = shift;
 	my $v = $self->{VALUE};
-	return "return ".Util::expr($v);
+	return "return ".Syntel::Util::expr($v);
 }
 
 1;

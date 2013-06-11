@@ -1,9 +1,9 @@
-package Cast;
+package Syntel::Cast;
 use strict;
 use warnings;
-use parent qw(Expression);
+use parent qw(Syntel::Expression);
 
-use Util;
+use Syntel::Util;
 
 sub new {
 	my $proto = shift;
@@ -24,7 +24,7 @@ sub type {
 
 sub expr {
 	my $self = shift;
-	return "(".$self->{TYPE}->declString().")(".Util::expr($self->{EXPRESSION}).")";
+	return "(".$self->{TYPE}->declString().")(".Syntel::Util::expr($self->{EXPRESSION}).")";
 }
 
 1;

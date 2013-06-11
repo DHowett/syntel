@@ -5,23 +5,23 @@ use warnings;
 use File::Basename qw(dirname);
 use lib dirname(__FILE__)."/lib";
 
-use Context;
-use Function;
-use Assign;
-use Variable;
-use Vararg;
-use Return;
-use ConstantValue;
-use String;
-use BinaryOperator;
-use PrefixOperator;
-use While;
-use Type;
-use Cast;
+use aliased 'Syntel::Context';
+use aliased 'Syntel::Function';
+use aliased 'Syntel::Assign';
+use aliased 'Syntel::Variable';
+use aliased 'Syntel::Vararg';
+use aliased 'Syntel::Return';
+use aliased 'Syntel::ConstantValue';
+use aliased 'Syntel::String';
+use aliased 'Syntel::BinaryOperator';
+use aliased 'Syntel::PrefixOperator';
+use aliased 'Syntel::While';
+use aliased 'Syntel::Type';
+use aliased 'Syntel::Cast';
 
 my $root = Context->new();
-my $x = Variable->new("x", $Type::INT);
-my $y = Variable->new("y", $Type::INT);
+my $x = Variable->new("x", $Syntel::Type::INT);
+my $y = Variable->new("y", $Syntel::Type::INT);
 $root->push($x->declaration);
 $root->push($y->declaration);
 
@@ -29,18 +29,18 @@ my $fpretp = Function->new("fpretp", Type->new("void(*(*)(void))(void)"), []);
 $fpretp->push(Return->new(Cast->new($fpretp, $fpretp->returnType)));
 $root->push($fpretp);
 
-my $mul = Function->new("multiply", $Type::INT, [Variable->new("_x", $Type::INT), Variable->new("_y", $Type::INT)]);
+my $mul = Function->new("multiply", $Syntel::Type::INT, [Variable->new("_x", $Syntel::Type::INT), Variable->new("_y", $Syntel::Type::INT)]);
 $mul->push(Return->new(BinaryOperator->new($mul->param(0), "*", $mul->param(1))));
 $root->push($mul);
 
-my $f = Function->new("whatever", $Type::INT, []);
+my $f = Function->new("whatever", $Syntel::Type::INT, []);
 $f->defer(Return->new(32));
 $root->push($f);
 
-my $printf = Function->new("printf", $Type::INT, [Variable->new("fmt", $Type::CHAR->pointer), $Type::VARARGS]);
+my $printf = Function->new("printf", $Syntel::Type::INT, [Variable->new("fmt", $Syntel::Type::CHAR->pointer), $Syntel::Type::VARARGS]);
 $root->push($printf->prototype);
 
-my $main = Function->new("main", $Type::INT, [Variable->new("argc", $Type::INT), Variable->new("argv", $Type::CHAR->pointer->pointer)]);
+my $main = Function->new("main", $Syntel::Type::INT, [Variable->new("argc", $Syntel::Type::INT), Variable->new("argv", $Syntel::Type::CHAR->pointer->pointer)]);
 $main->defer(Return->new($y));
 $main->push($x->assign(ConstantValue->new(10)));
 $main->push($y->assign($f->call()));
@@ -53,7 +53,7 @@ $main->push($x->assign($y));
 
 {
 	my $block = BlockContext->new();
-	my $i = Variable->new("i", $Type::INT);
+	my $i = Variable->new("i", $Syntel::Type::INT);
 	$block->push($i->declaration(10));
 
 	my $iprint = $printf->call(String->new("i = %d "), $i);

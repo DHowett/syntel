@@ -1,4 +1,4 @@
-package Util;
+package Syntel::Util;
 use strict;
 use warnings;
 

@@ -1,4 +1,4 @@
-package Vararg;
+package Syntel::Vararg;
 use strict;
 use warnings;
 

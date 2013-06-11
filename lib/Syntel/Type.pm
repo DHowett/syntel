@@ -1,23 +1,23 @@
-package Type;
+package Syntel::Type;
 use strict;
 use warnings;
 use Scalar::Util qw(blessed);
 
 our %_typeCache = (
-	void		=>	PlainType->new("void"),
-	char		=>	PlainType->new("char"),
-	short		=>	PlainType->new("short"),
-	int		=>	PlainType->new("int"),
-	long		=>	PlainType->new("long"),
-	float		=>	PlainType->new("float"),
-	double		=>	PlainType->new("double"),
-	signed		=>	PlainType->new("signed"),
-	unsigned	=>	PlainType->new("unsigned"),
-	bool		=>	PlainType->new("bool"),
-	"..."		=>	VarargType->new(),
+	void		=>	Syntel::PlainType->new("void"),
+	char		=>	Syntel::PlainType->new("char"),
+	short		=>	Syntel::PlainType->new("short"),
+	int		=>	Syntel::PlainType->new("int"),
+	long		=>	Syntel::PlainType->new("long"),
+	float		=>	Syntel::PlainType->new("float"),
+	double		=>	Syntel::PlainType->new("double"),
+	signed		=>	Syntel::PlainType->new("signed"),
+	unsigned	=>	Syntel::PlainType->new("unsigned"),
+	bool		=>	Syntel::PlainType->new("bool"),
+	"..."		=>	Syntel::VarargType->new(),
 );
 
-use Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
+use Syntel::Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
 
 our $VOID = __PACKAGE__->new("void");
 our $CHAR = __PACKAGE__->new("char");
@@ -63,7 +63,7 @@ sub _parseTypeString {
 	# If there's more than two sets of parens outside braces (which would be a possible struct/complex type)
 	# Erase it, and take the right as function arguments: we probably have a function pointer.
 	if(@parens > 3 && !fallsBetween($parens[3], @braces)) {
-		bless $type, "FunctionType";
+		bless $type, "Syntel::FunctionType";
 
 		my ($left, $right) = (
 			substr($typeString, $parens[0], $parens[1]-$parens[0]-1),
@@ -176,7 +176,7 @@ sub _parseTypeString {
 			$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
 			$_typeCache{$cacheKey} = $type;
 		}
-		bless $type, $pkg;
+		bless $type, "Syntel::".$pkg;
 	}
 
 	return ($type, $typeName) if wantarray;
@@ -225,13 +225,13 @@ sub _leftRight {
 
 1;
 
-package _TypeBase;
+package Syntel::_TypeBase;
 use strict;
 use warnings;
 my $printContext = { };
 my $printDepth = 0;
 use overload '""' => sub { my $s = shift; $printDepth++; my $str = $s->_stringify($printContext); $printDepth--; $printContext = {} if $printDepth == 0; $str; };
-use parent -norequire, "Type";
+use parent -norequire, "Syntel::Type";
 
 sub DOES {
 	my ($self, $does) = @_;
@@ -256,14 +256,14 @@ sub pointer {
 	my $self = shift;
 	my $ptr = $self->{_POINTER_TYPE};
 	if(!defined $ptr) {
-		$ptr = ($self->{_POINTER_TYPE} = PointerType->new($self));
+		$ptr = ($self->{_POINTER_TYPE} = Syntel::PointerType->new($self));
 	}
 	return $ptr;
 }
 
 sub array {
 	my $self = shift;
-	my $arr = ArrayType->new($self, shift);
+	my $arr = Syntel::ArrayType->new($self, shift);
 	return $arr;
 }
 
@@ -278,10 +278,10 @@ sub emit {
 }
 1;
 
-package ArrayType; # LENGTH
+package Syntel::ArrayType; # LENGTH
 use strict;
 use warnings;
-use parent -norequire, "_TypeBase";
+use parent -norequire, "Syntel::_TypeBase";
 
 sub _stringify {
 	my $s = shift;
@@ -304,10 +304,10 @@ sub declString {
 }
 1;
 
-package PointerType; # INNER_TYPE
+package Syntel::PointerType; # INNER_TYPE
 use strict;
 use warnings;
-use parent -norequire, "_TypeBase";
+use parent -norequire, "Syntel::_TypeBase";
 
 sub _stringify {
 	my $s = shift;
@@ -331,7 +331,7 @@ sub declString {
 }
 1;
 
-package BlockPointerType; # (see _FunctionType)
+package Syntel::BlockPointerType; # (see _FunctionType)
 use strict;
 use warnings;
 use parent -norequire, "PointerType";
@@ -343,10 +343,10 @@ sub declString {
 }
 1;
 
-package FunctionType; # RETURN_TYPE ARGUMENTS
+package Syntel::FunctionType; # RETURN_TYPE ARGUMENTS
 use strict;
 use warnings;
-use parent -norequire, "_TypeBase";
+use parent -norequire, "Syntel::_TypeBase";
 
 sub _stringify {
 	my $s = shift;
@@ -369,10 +369,10 @@ sub declString {
 }
 1;
 
-package StructType; # NAME MEMBERS
+package Syntel::StructType; # NAME MEMBERS
 use strict;
 use warnings;
-use parent -norequire, "_TypeBase";
+use parent -norequire, "Syntel::_TypeBase";
 
 sub _stringify {
 	my $s = shift;
@@ -419,13 +419,13 @@ sub _declStringContents {
 }
 1;
 
-package UnionType; # See StructType
+package Syntel::UnionType; # See StructType
 use strict;
 use warnings;
 use parent -norequire, "StructType";
 1;
 
-package StructMember; # NAME TYPE
+package Syntel::StructMember; # NAME TYPE
 use strict;
 use warnings;
 use overload '""' => sub { my $s = shift; return $s->{NAME}.":".$s->{TYPE}; };
@@ -448,7 +448,7 @@ sub type {
 }
 1;
 
-package EnumType; # See StructType
+package Syntel::EnumType; # See StructType
 use strict;
 use warnings;
 use parent -norequire, "StructType";
@@ -465,7 +465,7 @@ sub _declStringContents {
 }
 1;
 
-package EnumValue; # NAME VALUE
+package Syntel::EnumValue; # NAME VALUE
 use strict;
 use warnings;
 sub new {
@@ -487,10 +487,10 @@ sub value {
 
 1;
 
-package PlainType; # TYPE PACKED_BITS
+package Syntel::PlainType; # TYPE PACKED_BITS
 use strict;
 use warnings;
-use parent -norequire, "_TypeBase";
+use parent -norequire, "Syntel::_TypeBase";
 
 sub _stringify {
 	my $s = shift;
@@ -514,10 +514,10 @@ sub declString {
 }
 1;
 
-package VarargType;
+package Syntel::VarargType;
 use strict;
 use warnings;
-use parent -norequire, "_TypeBase";
+use parent -norequire, "Syntel::_TypeBase";
 
 sub declString {
 	return "...";

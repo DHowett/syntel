@@ -1,7 +1,7 @@
-package ConstantValue;
+package Syntel::ConstantValue;
 use strict;
 use warnings;
-use parent qw(Expression);
+use parent qw(Syntel::Expression);
 
 sub new {
 	my $proto = shift;
