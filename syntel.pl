@@ -17,12 +17,17 @@ use BinaryOperator;
 use PrefixOperator;
 use While;
 use Type;
+use Cast;
 
 my $root = Context->new();
 my $x = Variable->new("x", $Type::INT);
 my $y = Variable->new("y", $Type::INT);
 $root->push($x->declaration);
 $root->push($y->declaration);
+
+my $fpretp = Function->new("fpretp", Type->new("void(*(*)(void))(void)"), []);
+$fpretp->push(Return->new(Cast->new($fpretp, $fpretp->returnType)));
+$root->push($fpretp);
 
 my $mul = Function->new("multiply", $Type::INT, [Variable->new("_x", $Type::INT), Variable->new("_y", $Type::INT)]);
 $mul->push(Return->new(BinaryOperator->new($mul->param(0), "*", $mul->param(1))));
