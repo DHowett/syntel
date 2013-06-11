@@ -2,17 +2,12 @@ package Syntel::Function;
 use strict;
 use warnings;
 use parent qw(Syntel::BlockContext);
+use role qw(Expression);
 
 use Scalar::Util;
 
 use Syntel::FunctionCall;
 use Syntel::FunctionPrototype;
-
-sub DOES {
-	my ($self, $does) = @_;
-	return 1 if $does eq "Expression";
-	return $self->SUPER::DOES($does);
-}
 
 sub new {
 	my $proto = shift;

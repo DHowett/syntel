@@ -2,6 +2,7 @@ package Syntel::Expression;
 use strict;
 use warnings;
 use parent qw(Syntel::Statement);
+use role qw(Expression);
 
 sub typed {
 	my $self = shift;

@@ -1,6 +1,7 @@
 package Syntel::Type;
 use strict;
 use warnings;
+use role qw(Type);
 use Scalar::Util qw(blessed);
 
 our %_typeCache = (
@@ -232,12 +233,7 @@ my $printContext = { };
 my $printDepth = 0;
 use overload '""' => sub { my $s = shift; $printDepth++; my $str = $s->_stringify($printContext); $printDepth--; $printContext = {} if $printDepth == 0; $str; };
 use parent -norequire, "Syntel::Type";
-
-sub DOES {
-	my ($self, $does) = @_;
-	return 1 if $does eq "Statement";
-	return $self->SUPER::DOES($does);
-}
+use role qw(Statement);
 
 sub _stringify {
 	my $self = shift;
@@ -326,7 +322,7 @@ sub declString {
 	my $self = shift;
 	my $name = shift//"";
 	$name = "*".$name;
-	$name = "(".$name.")" if $self->{INNER_TYPE}->isa("ArrayType");
+	$name = "(".$name.")" if $self->{INNER_TYPE}->isa("Syntel::ArrayType");
 	return $self->{INNER_TYPE}->declString($name);
 }
 1;
