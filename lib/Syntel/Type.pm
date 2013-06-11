@@ -238,7 +238,7 @@ use role qw(Statement);
 sub _stringify {
 	my $self = shift;
 	my $pkg = blessed $self;
-	$pkg =~ s/(\w+)Type$/$1/;
+	$pkg =~ s/.*?(\w+)Type$/$1/;
 	return $pkg;
 }
 
@@ -393,7 +393,7 @@ sub declString {
 	my $self = shift;
 	my $name = shift//"";
 	my $t = lc(blessed $self);
-	$t =~ s/(\w+)type$/$1/;
+	$t =~ s/.*?(\w+)type$/$1/;
 	$t .= " ";
 
 	if($self->{NAME}) {
