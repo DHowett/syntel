@@ -14,6 +14,14 @@ sub expr {
 	return $val;
 }
 
+sub type {
+	my $val = shift;
+	if(ref($val) && $val->DOES("Expression")) {
+		return $val->type();
+	}
+	return undef;
+}
+
 sub fallsBetween {
 	my $idx = shift;
 	while(@_ > 0) {

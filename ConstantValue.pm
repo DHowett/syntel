@@ -11,6 +11,10 @@ sub new {
 	return bless $self, $pkg
 }
 
+sub type {
+	return undef;
+}
+
 sub expr {
 	my $self = shift;
 	my $v = $$self;

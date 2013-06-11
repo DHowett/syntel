@@ -11,6 +11,7 @@ sub new {
 	my $self = {};
 	$self->{OP} = shift;
 	$self->{M1} = shift;
+	$self->{TYPE} = Util::type($self->{M1});
 	return bless $self, $pkg
 }
 

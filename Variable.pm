@@ -36,7 +36,8 @@ sub assign {
 }
 
 sub pointer {
-	return TypedExpression->new(PrefixOperator->new("&", $self), $self->type->pointer);
+	my $self = shift;
+	return PrefixOperator->new("&", $self)->typed($self->type->pointer);
 }
 
 sub expr {

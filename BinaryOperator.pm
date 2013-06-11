@@ -12,6 +12,7 @@ sub new {
 	$self->{M1} = shift;
 	$self->{OP} = shift;
 	$self->{M2} = shift;
+	$self->{TYPE} = Util::type($self->{M1}) // Util::type($self->{M2}); # Inherit type from first value.
 	return bless $self, $pkg
 }
 

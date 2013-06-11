@@ -15,7 +15,7 @@ sub new {
 }
 
 sub type {
-	return $_->{FUNCTION}->returnType;
+	return $_[0]->{FUNCTION}->returnType;
 }
 
 sub expr {

@@ -13,6 +13,7 @@ sub new {
 	my $self = {};
 	$self->{VARIABLE} = shift;
 	$self->{VALUE} = shift;
+	$self->{TYPE} = Util::type($self->{VALUE}); # Inherit type from righthand value.
 	croak "Variable in Assign not an lvalue" if !$self->{VARIABLE}->isa("LValue");
 	return bless $self, $pkg
 }
