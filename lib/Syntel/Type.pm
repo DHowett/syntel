@@ -145,7 +145,7 @@ sub _parseTypeString {
 					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
 					@members = map {
 							# _parseTypeString returns TYPE,NAME but we want NAME,TYPE.
-							StructMember->new(reverse _parseTypeString($_, undef, 1));
+							Syntel::StructMember->new(reverse _parseTypeString($_, undef, 1));
 						} @subTypeStrings;
 				} else {
 					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
@@ -188,7 +188,7 @@ sub _parseEnumValueString {
 	my $s = shift;
 	my $enumval = {};
 	if($s =~ /^\s*(\w+)(\s*=\s*(.*?)\s*)?$/) {
-		return EnumValue->new($1, $3);
+		return Syntel::EnumValue->new($1, $3);
 	}
 	return undef;
 }
@@ -330,7 +330,7 @@ sub declString {
 package Syntel::BlockPointerType; # (see _FunctionType)
 use strict;
 use warnings;
-use parent -norequire, "PointerType";
+use parent -norequire, "Syntel::PointerType";
 
 sub declString {
 	my $self = shift;
@@ -418,7 +418,7 @@ sub _declStringContents {
 package Syntel::UnionType; # See StructType
 use strict;
 use warnings;
-use parent -norequire, "StructType";
+use parent -norequire, "Syntel::StructType";
 1;
 
 package Syntel::StructMember; # NAME TYPE
@@ -447,10 +447,10 @@ sub type {
 package Syntel::EnumType; # See StructType
 use strict;
 use warnings;
-use parent -norequire, "StructType";
+use parent -norequire, "Syntel::StructType";
 sub _stringify {
 	my $s = shift;
-	return $s->_TypeBase::_stringify.
+	return $s->Syntel::_TypeBase::_stringify.
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
 			"{".(scalar @{$s->{MEMBERS}})." values}";
 };
