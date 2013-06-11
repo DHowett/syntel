@@ -6,6 +6,7 @@ use File::Basename qw(dirname);
 use lib dirname(__FILE__)."/lib";
 
 use aliased 'Syntel::Context';
+use aliased 'Syntel::BlockContext';
 use aliased 'Syntel::Function';
 use aliased 'Syntel::Assign';
 use aliased 'Syntel::Variable';
