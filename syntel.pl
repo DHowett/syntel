@@ -37,10 +37,10 @@ my $f = Function->new("whatever", $Type::INT, []);
 $f->defer(Return->new(32));
 $root->push($f);
 
-my $printf = Function->new("printf", $Type::INT, [Variable->new("fmt", $Type::CHAR->pointer), Vararg->new()]);
+my $printf = Function->new("printf", $Type::INT, [Variable->new("fmt", $Type::CHAR->pointer), $Type::VARARGS]);
 $root->push($printf->prototype);
 
-my $main = Function->new("main", $Type::INT, [Variable->new("argc", $Type::INT), Variable->new("argv", $Type::CHAR->pointer->array)]);
+my $main = Function->new("main", $Type::INT, [Variable->new("argc", $Type::INT), Variable->new("argv", $Type::CHAR->pointer->pointer)]);
 $main->defer(Return->new($y));
 $main->push($x->assign(ConstantValue->new(10)));
 $main->push($y->assign($f->call()));
