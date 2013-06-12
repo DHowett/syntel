@@ -2,7 +2,7 @@ package Syntel::Function;
 use strict;
 use warnings;
 use parent qw(Syntel::BlockContext);
-use role qw(Expression Addressable);
+use role qw(Expression Addressable Callable);
 
 use Scalar::Util;
 use Carp;
@@ -68,9 +68,7 @@ sub param {
 }
 
 sub call {
-	my $self = shift;
-	my @a = @_;
-	return Syntel::FunctionCall->new($self, \@a);
+	return Syntel::Expression::call(@_);
 }
 
 sub expr {

@@ -27,12 +27,16 @@ $root->push($x->declaration);
 $root->push($y->declaration);
 
 my $fpretp = Function->new("fpretp", Syntel::Type::Function->new(Type->new("void(*(*)(void))(void)", [])), []);
-$fpretp->push(Return->new(Cast->new($fpretp, $fpretp->type->returnType)));
+$fpretp->push(Return->new(Cast->new($fpretp->pointer, $fpretp->type->returnType)));
 $root->push($fpretp);
 
 my $mul = Function->new("multiply", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::INT, $Syntel::Type::INT]), ["_x", "_y"]);
 $mul->push(Return->new(BinaryOperator->new($mul->param(0), "*", $mul->param(1))));
 $root->push($mul);
+
+my $intop = Function->new("int_op", Syntel::Type::Function->new($Syntel::Type::INT, [$mul->type->pointer, $Syntel::Type::INT, $Syntel::Type::INT]), ["fp", "_x", "_y"]);
+$intop->push(Return->new($intop->param(0)->call($intop->param(1), $intop->param(2))));
+$root->push($intop);
 
 my $f = Function->new("whatever", Syntel::Type::Function->new($Syntel::Type::INT, []), []);
 $f->defer(Return->new(32));
@@ -49,6 +53,7 @@ my $printcall = $printf->call(String->new("x == %d, y == %d\n"), $x, $y);
 $main->push($printcall);
 $main->defer($printcall);
 $main->push($printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
+$main->push($printf->call(String->new("intop mul == %d\n"), $intop->call($mul->pointer, $x, $y)));
 $main->push($printf->call(String->new("xp = %p\n"), $x->pointer));
 $main->push($printf->call(String->new("fpretp() = %p\n"), $fpretp->call()));
 $main->push($x->assign($y));
