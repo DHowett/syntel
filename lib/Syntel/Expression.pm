@@ -4,6 +4,8 @@ use warnings;
 use parent qw(Syntel::Statement);
 use role qw(Expression);
 
+use Carp;
+
 use Syntel::PrefixOperator;
 
 sub conformsToRole {
@@ -17,6 +19,12 @@ sub conformsToRole {
 sub dereference {
 	my $self = shift;
 	return Syntel::PrefixOperator->new('*', $self)->typed($self->type->innerType);
+}
+
+sub pointer {
+	my $self = shift;
+	croak "Expression $self not addressable" if !$self->DOES("Addressable");
+	return Syntel::PrefixOperator->new("&", $self)->typed($self->type->pointer);
 }
 
 sub typed {

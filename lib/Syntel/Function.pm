@@ -2,11 +2,12 @@ package Syntel::Function;
 use strict;
 use warnings;
 use parent qw(Syntel::BlockContext);
-use role qw(Expression);
+use role qw(Expression Addressable);
 
 use Scalar::Util;
 use Carp;
 
+use Syntel::Expression;
 use Syntel::FunctionCall;
 use Syntel::Declare;
 
@@ -48,6 +49,10 @@ sub prototype {
 
 sub declaration {
 	return $_[0]->{_DECL};
+}
+
+sub pointer {
+	return Syntel::Expression::pointer(@_);
 }
 
 sub param {

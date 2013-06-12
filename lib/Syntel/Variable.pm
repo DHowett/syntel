@@ -2,6 +2,7 @@ package Syntel::Variable;
 use strict;
 use warnings;
 use parent qw(Syntel::Expression Syntel::LValue);
+use role qw(Addressable);
 
 use Syntel::Declare;
 use Syntel::Assign;
@@ -32,11 +33,6 @@ sub declaration {
 sub assign {
 	my $self = shift;
 	return Syntel::Assign->new($self, shift);
-}
-
-sub pointer {
-	my $self = shift;
-	return Syntel::PrefixOperator->new("&", $self)->typed($self->type->pointer);
 }
 
 sub expr {
