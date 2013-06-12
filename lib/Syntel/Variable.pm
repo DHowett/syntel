@@ -26,7 +26,7 @@ sub type {
 
 sub declaration {
 	my $self = shift;
-	return Syntel::Declare->new($self);
+	return Syntel::Declare->new($self, @_);
 }
 
 sub assign {
