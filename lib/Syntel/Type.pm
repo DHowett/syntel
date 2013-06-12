@@ -319,11 +319,15 @@ sub new {
 	return bless $self, $pkg;
 }
 
+sub _pointerChar {
+	return "*";
+}
+
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
 	my $inner = $self->{INNER_TYPE};
-	$name = "*".$name;
+	$name = $self->_pointerChar.$name;
 	$name = "(".$name.")" if $inner->DOES("Array");
 	return $inner->declString($name);
 }
@@ -334,12 +338,10 @@ use strict;
 use warnings;
 use parent -norequire, "Syntel::Type::Pointer";
 
-sub declString {
-	my $self = shift;
-	my $name = shift//"";
-	my $inner = $self->{INNER_TYPE};
-	return $inner->declString("^".$name);
+sub _pointerChar {
+	return "^";
 }
+
 1;
 
 package Syntel::Type::Function; # RETURN_TYPE ARGUMENTS
