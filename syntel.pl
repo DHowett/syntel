@@ -50,6 +50,7 @@ $main->push($printcall);
 $main->defer($printcall);
 $main->push($printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
 $main->push($printf->call(String->new("xp = %p\n"), $x->pointer));
+$main->push($printf->call(String->new("fpretp() = %p\n"), $fpretp->call()));
 $main->push($x->assign($y));
 
 {
