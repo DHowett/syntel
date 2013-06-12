@@ -296,6 +296,14 @@ sub new {
 	return bless $self, $pkg;
 }
 
+sub innerType {
+	return $_[0]->{INNER_TYPE};
+}
+
+sub length {
+	return $_[0]->{LENGTH};
+}
+
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
@@ -320,6 +328,10 @@ sub new {
 	my $self = $pkg->SUPER::new();
 	$self->{INNER_TYPE} = shift;
 	return bless $self, $pkg;
+}
+
+sub innerType {
+	return $_[0]->{INNER_TYPE};
 }
 
 sub _pointerChar {
