@@ -277,6 +277,7 @@ package Syntel::Type::Array; # LENGTH
 use strict;
 use warnings;
 use parent -norequire, "Syntel::Type::_Base";
+use role qw(Array);
 
 sub _stringify {
 	my $s = shift;
@@ -303,6 +304,7 @@ package Syntel::Type::Pointer; # INNER_TYPE
 use strict;
 use warnings;
 use parent -norequire, "Syntel::Type::_Base";
+use role qw(Array Pointer);
 
 sub _stringify {
 	my $s = shift;
@@ -320,9 +322,10 @@ sub new {
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
+	my $inner = $self->{INNER_TYPE};
 	$name = "*".$name;
-	$name = "(".$name.")" if $self->{INNER_TYPE}->isa("Syntel::Type::Array");
-	return $self->{INNER_TYPE}->declString($name);
+	$name = "(".$name.")" if $inner->DOES("Array");
+	return $inner->declString($name);
 }
 1;
 
@@ -343,6 +346,7 @@ package Syntel::Type::Function; # RETURN_TYPE ARGUMENTS
 use strict;
 use warnings;
 use parent -norequire, "Syntel::Type::_Base";
+use role qw(Function);
 
 sub _stringify {
 	my $s = shift;
