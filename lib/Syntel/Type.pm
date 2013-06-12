@@ -75,11 +75,14 @@ sub _parseTypeString {
 		# If we bear a passed inner type, it's probably our return type.
 		$type->{RETURN_TYPE} = scalar _parseTypeString($typeString, $passedInnerType);
 
-		my @argStrings = smartSplit(qr/\s*,\s*/, $right);
-		#print STDERR join("!", @argStrings),$/;
-		$type->{ARGUMENTS} = [map {scalar _parseTypeString($_);} @argStrings];
-		# Descend left iff there's a righthand side. We might need to nest within it.
+		if($right =~ /^\s*void\s*/) {
+			$type->{ARGUMENTS} = [];
+		} elsif($right !~ /^\s*$/) {
+			my @argStrings = smartSplit(qr/\s*,\s*/, $right);
+			$type->{ARGUMENTS} = [map {scalar _parseTypeString($_);} @argStrings];
+		}
 
+		# Descend left iff there's a righthand side. We might need to nest within it.
 		($type, $typeName) = _parseTypeString($left, $type);
 	} elsif(@parens > 1 && !fallsBetween($parens[1], @braces)) {
 		my $inner = substr($typeString, $parens[0], $parens[1]-$parens[0]-1);
@@ -352,7 +355,13 @@ use role qw(Function);
 
 sub _stringify {
 	my $s = shift;
-	return $s->SUPER::_stringify."[".$s->{RETURN_TYPE}."](".join(",", map {"".$_} @{$s->{ARGUMENTS}}).")";
+	return $s->SUPER::_stringify."[".$s->{RETURN_TYPE}."](".
+		(defined $s->{ARGUMENTS}
+			? (@{$s->{ARGUMENTS}} > 0
+				? join(",", map {"".$_} @{$s->{ARGUMENTS}})
+				: "-VOID-")
+			: "")
+		.")";
 }
 
 sub new {
@@ -367,7 +376,14 @@ sub new {
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
-	return $self->{RETURN_TYPE}->declString($name."(".join(",", map {$_->declString()} @{$self->{ARGUMENTS}}).")");
+	return $self->{RETURN_TYPE}->declString($name."(".
+		(defined $self->{ARGUMENTS}
+			? (@{$self->{ARGUMENTS}} > 0
+				? join(",", map {$_->declString()} @{$self->{ARGUMENTS}})
+				: "void")
+			: "")
+		.")"
+	);
 }
 1;
 

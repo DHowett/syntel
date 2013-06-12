@@ -69,4 +69,5 @@ print STDERR _declStringForType(Syntel::Type->new("void (^(^)())()"), "blockpoin
 print STDERR _declStringForType(Syntel::Type->new("void (*(*)())()")),$/;
 print STDERR _declStringForType(Syntel::Type->new("void (*(*(*)(void *))(int **))(int(*)())")->array(10), "abcdef"),$/;
 print STDERR _declStringForType(Syntel::Type->new("void (*(*(*)())())()")),$/;
+print STDERR _declStringForType(Syntel::Type->new("void (*(*(*)())())(void)")),$/;
 
