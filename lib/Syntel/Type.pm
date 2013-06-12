@@ -328,7 +328,7 @@ sub declString {
 	my $name = shift//"";
 	my $inner = $self->{INNER_TYPE};
 	$name = $self->_pointerChar.$name;
-	$name = "(".$name.")" if $inner->DOES("Array");
+	$name = "(".$name.")" if ($inner->DOES("Array") || $inner->DOES("Function")) && !$inner->DOES("Pointer");
 	return $inner->declString($name);
 }
 1;
@@ -367,7 +367,7 @@ sub new {
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
-	return $self->{RETURN_TYPE}->declString("(".$name.")(".join(",", map {$_->declString()} @{$self->{ARGUMENTS}}).")");
+	return $self->{RETURN_TYPE}->declString($name."(".join(",", map {$_->declString()} @{$self->{ARGUMENTS}}).")");
 }
 1;
 
