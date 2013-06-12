@@ -5,17 +5,17 @@ use role qw(Type);
 use Scalar::Util qw(blessed);
 
 our %_typeCache = (
-	void		=>	Syntel::PlainType->new("void"),
-	char		=>	Syntel::PlainType->new("char"),
-	short		=>	Syntel::PlainType->new("short"),
-	int		=>	Syntel::PlainType->new("int"),
-	long		=>	Syntel::PlainType->new("long"),
-	float		=>	Syntel::PlainType->new("float"),
-	double		=>	Syntel::PlainType->new("double"),
-	signed		=>	Syntel::PlainType->new("signed"),
-	unsigned	=>	Syntel::PlainType->new("unsigned"),
-	bool		=>	Syntel::PlainType->new("bool"),
-	"..."		=>	Syntel::VarargType->new(),
+	void		=>	Syntel::Type::Plain->new("void"),
+	char		=>	Syntel::Type::Plain->new("char"),
+	short		=>	Syntel::Type::Plain->new("short"),
+	int		=>	Syntel::Type::Plain->new("int"),
+	long		=>	Syntel::Type::Plain->new("long"),
+	float		=>	Syntel::Type::Plain->new("float"),
+	double		=>	Syntel::Type::Plain->new("double"),
+	signed		=>	Syntel::Type::Plain->new("signed"),
+	unsigned	=>	Syntel::Type::Plain->new("unsigned"),
+	bool		=>	Syntel::Type::Plain->new("bool"),
+	"..."		=>	Syntel::Type::Vararg->new(),
 );
 
 use Syntel::Util qw(matchedDelimiterSet matchedParenthesisSet smartSplit fallsBetween);
@@ -64,7 +64,7 @@ sub _parseTypeString {
 	# If there's more than two sets of parens outside braces (which would be a possible struct/complex type)
 	# Erase it, and take the right as function arguments: we probably have a function pointer.
 	if(@parens > 3 && !fallsBetween($parens[3], @braces)) {
-		bless $type, "Syntel::FunctionType";
+		bless $type, "Syntel::Type::Function";
 
 		my ($left, $right) = (
 			substr($typeString, $parens[0], $parens[1]-$parens[0]-1),
@@ -93,7 +93,7 @@ sub _parseTypeString {
 		my $innerType = $typeString ? scalar _parseTypeString($typeString, $passedInnerType) : $passedInnerType;
 		($type, $typeName) = _parseTypeString($inner, $innerType);
 	} else {
-		my $pkg = undef;
+		my $typePackage = undef;
 		# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
 		# pull NAME out and leave the rest unmolested.
 		# This is also valid for TYPE *NAME[ and TYPE ^NAME
@@ -104,10 +104,10 @@ sub _parseTypeString {
 
 		if($typeString =~ /\s*(\^|\*|\[\s*(\d*)\s*\])$/p) {
 			my $newType = ${^PREMATCH};
-			$pkg = "PointerType" if($1 eq "*");
-			$pkg = "BlockPointerType" if($1 eq "^");
+			$typePackage = "Pointer" if($1 eq "*");
+			$typePackage = "BlockPointer" if($1 eq "^");
 			if(substr($1, 0, 1) eq "[") {
-				$pkg = "ArrayType";
+				$typePackage = "Array";
 				my $alen = undef;
 				$alen = int($2) if $2 ne "";
 				$type->{LENGTH} = $alen;
@@ -116,12 +116,12 @@ sub _parseTypeString {
 			# If we have a subtype string, we might need to nest *our* inner type inside it.
 			my $innerType = $newType ? scalar _parseTypeString($newType, $passedInnerType) : $passedInnerType;
 			if($innerType) {
-				$innerType->{_POINTER_TYPE} = $type if $pkg eq "PointerType";
+				$innerType->{_POINTER_TYPE} = $type if $typePackage eq "Pointer";
 				$type->{INNER_TYPE} = $innerType;
 			}
 		} elsif($typeString =~ /^\s*(struct|union|enum)\s*(\w+)?\s*{?/) {
 			my $cacheKey = $1;
-			$pkg = ucfirst($1)."Type";
+			$typePackage = ucfirst($1);
 			my $structname = $2;
 			$type->{NAME} = $structname;
 
@@ -141,11 +141,11 @@ sub _parseTypeString {
 
 				my @subTypeStrings;
 				my @members;
-				if($pkg ne "EnumType") {
+				if($typePackage ne "Enum") {
 					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*;\s*/, $contents);
 					@members = map {
 							# _parseTypeString returns TYPE,NAME but we want NAME,TYPE.
-							Syntel::StructMember->new(reverse _parseTypeString($_, undef, 1));
+							Syntel::Type::Struct::Member->new(reverse _parseTypeString($_, undef, 1));
 						} @subTypeStrings;
 				} else {
 					@subTypeStrings = grep { $_ ne "" } smartSplit(qr/\s*,\s*/, $contents);
@@ -154,7 +154,7 @@ sub _parseTypeString {
 				$type->{MEMBERS} = \@members if(scalar @members > 0)
 			}
 		} else {
-			$pkg = "PlainType";
+			$typePackage = "Plain";
 			my $cacheKey = "";
 
 			if($typeString =~ /\s*:\s*(\d+)$/p) {
@@ -168,7 +168,7 @@ sub _parseTypeString {
 				$typeString = ${^PREMATCH};
 				$typeName = $1;
 			} elsif($typeString eq "...") {
-				$pkg = "VarargType";
+				$typePackage = "Vararg";
 			}
 			$cacheKey = $typeString.$cacheKey;
 
@@ -177,7 +177,7 @@ sub _parseTypeString {
 			$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
 			$_typeCache{$cacheKey} = $type;
 		}
-		bless $type, "Syntel::".$pkg;
+		bless $type, "Syntel::Type::".$typePackage;
 	}
 
 	return ($type, $typeName) if wantarray;
@@ -188,7 +188,7 @@ sub _parseEnumValueString {
 	my $s = shift;
 	my $enumval = {};
 	if($s =~ /^\s*(\w+)(\s*=\s*(.*?)\s*)?$/) {
-		return Syntel::EnumValue->new($1, $3);
+		return Syntel::Type::Enum::Value->new($1, $3);
 	}
 	return undef;
 }
@@ -226,20 +226,19 @@ sub _leftRight {
 
 1;
 
-package Syntel::_TypeBase;
+package Syntel::Type::_Base;
 use strict;
 use warnings;
 my $printContext = { };
 my $printDepth = 0;
 use overload '""' => sub { my $s = shift; $printDepth++; my $str = $s->_stringify($printContext); $printDepth--; $printContext = {} if $printDepth == 0; $str; };
-use parent -norequire, "Syntel::Type";
 use role qw(Statement);
+use Scalar::Util qw(blessed);
 
 sub _stringify {
 	my $self = shift;
-	my $pkg = blessed $self;
-	$pkg =~ s/.*?(\w+)Type$/$1/;
-	return $pkg;
+	(blessed $self) =~ m/(\w+)$/;
+	return $1;
 }
 
 sub new {
@@ -252,14 +251,14 @@ sub pointer {
 	my $self = shift;
 	my $ptr = $self->{_POINTER_TYPE};
 	if(!defined $ptr) {
-		$ptr = ($self->{_POINTER_TYPE} = Syntel::PointerType->new($self));
+		$ptr = ($self->{_POINTER_TYPE} = Syntel::Type::Pointer->new($self));
 	}
 	return $ptr;
 }
 
 sub array {
 	my $self = shift;
-	my $arr = Syntel::ArrayType->new($self, shift);
+	my $arr = Syntel::Type::Array->new($self, shift);
 	return $arr;
 }
 
@@ -274,10 +273,10 @@ sub emit {
 }
 1;
 
-package Syntel::ArrayType; # LENGTH
+package Syntel::Type::Array; # LENGTH
 use strict;
 use warnings;
-use parent -norequire, "Syntel::_TypeBase";
+use parent -norequire, "Syntel::Type::_Base";
 
 sub _stringify {
 	my $s = shift;
@@ -300,10 +299,10 @@ sub declString {
 }
 1;
 
-package Syntel::PointerType; # INNER_TYPE
+package Syntel::Type::Pointer; # INNER_TYPE
 use strict;
 use warnings;
-use parent -norequire, "Syntel::_TypeBase";
+use parent -norequire, "Syntel::Type::_Base";
 
 sub _stringify {
 	my $s = shift;
@@ -322,27 +321,28 @@ sub declString {
 	my $self = shift;
 	my $name = shift//"";
 	$name = "*".$name;
-	$name = "(".$name.")" if $self->{INNER_TYPE}->isa("Syntel::ArrayType");
+	$name = "(".$name.")" if $self->{INNER_TYPE}->isa("Syntel::Type::Array");
 	return $self->{INNER_TYPE}->declString($name);
 }
 1;
 
-package Syntel::BlockPointerType; # (see _FunctionType)
+package Syntel::Type::BlockPointer; # (see Type::Pointer)
 use strict;
 use warnings;
-use parent -norequire, "Syntel::PointerType";
+use parent -norequire, "Syntel::Type::Pointer";
 
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
-	return $self->{INNER_TYPE}->declString("^".$name);
+	my $inner = $self->{INNER_TYPE};
+	return $inner->declString("^".$name);
 }
 1;
 
-package Syntel::FunctionType; # RETURN_TYPE ARGUMENTS
+package Syntel::Type::Function; # RETURN_TYPE ARGUMENTS
 use strict;
 use warnings;
-use parent -norequire, "Syntel::_TypeBase";
+use parent -norequire, "Syntel::Type::_Base";
 
 sub _stringify {
 	my $s = shift;
@@ -365,10 +365,10 @@ sub declString {
 }
 1;
 
-package Syntel::StructType; # NAME MEMBERS
+package Syntel::Type::Struct; # NAME MEMBERS
 use strict;
 use warnings;
-use parent -norequire, "Syntel::_TypeBase";
+use parent -norequire, "Syntel::Type::_Base";
 
 sub _stringify {
 	my $s = shift;
@@ -392,12 +392,11 @@ sub new {
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
-	my $t = lc(blessed $self);
-	$t =~ s/.*?(\w+)type$/$1/;
-	$t .= " ";
+	(blessed $self) =~ m/(\w+)$/;
+	my $t = lc($1);
 
 	if($self->{NAME}) {
-		$t .= $self->{NAME};
+		$t .= " ".$self->{NAME};
 	}
 
 	if(!$self->{NAME} || $name eq "") {
@@ -415,13 +414,13 @@ sub _declStringContents {
 }
 1;
 
-package Syntel::UnionType; # See StructType
+package Syntel::Type::Union; # See Type::Struct
 use strict;
 use warnings;
-use parent -norequire, "Syntel::StructType";
+use parent -norequire, "Syntel::Type::Struct";
 1;
 
-package Syntel::StructMember; # NAME TYPE
+package Syntel::Type::Struct::Member; # NAME TYPE
 use strict;
 use warnings;
 use overload '""' => sub { my $s = shift; return $s->{NAME}.":".$s->{TYPE}; };
@@ -444,13 +443,13 @@ sub type {
 }
 1;
 
-package Syntel::EnumType; # See StructType
+package Syntel::Type::Enum; # See Syntel::Type::Struct
 use strict;
 use warnings;
-use parent -norequire, "Syntel::StructType";
+use parent -norequire, "Syntel::Type::Struct";
 sub _stringify {
 	my $s = shift;
-	return $s->Syntel::_TypeBase::_stringify.
+	return $s->Syntel::Type::_Base::_stringify.
 		(defined $s->{NAME} ? "(\"".$s->{NAME}."\")" : "").
 			"{".(scalar @{$s->{MEMBERS}})." values}";
 };
@@ -461,7 +460,7 @@ sub _declStringContents {
 }
 1;
 
-package Syntel::EnumValue; # NAME VALUE
+package Syntel::Type::Enum::Value; # NAME VALUE
 use strict;
 use warnings;
 sub new {
@@ -483,10 +482,10 @@ sub value {
 
 1;
 
-package Syntel::PlainType; # TYPE PACKED_BITS
+package Syntel::Type::Plain; # TYPE PACKED_BITS
 use strict;
 use warnings;
-use parent -norequire, "Syntel::_TypeBase";
+use parent -norequire, "Syntel::Type::_Base";
 
 sub _stringify {
 	my $s = shift;
@@ -510,10 +509,10 @@ sub declString {
 }
 1;
 
-package Syntel::VarargType;
+package Syntel::Type::Vararg;
 use strict;
 use warnings;
-use parent -norequire, "Syntel::_TypeBase";
+use parent -norequire, "Syntel::Type::_Base";
 
 sub declString {
 	return "...";
