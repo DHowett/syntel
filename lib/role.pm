@@ -1,11 +1,11 @@
 package role;
-use Scalar::Util;
 our $VERSION = '1.0';
 
 sub __does {
-	my $pkg = shift;
-	$pkg = Scalar::Util::blessed($pkg) if ref $pkg;
+	my $self = shift;
+	$pkg = ref $self || $self;
 	my $role = shift;
+	return 1 if $self->can("conformsToRole") && $self->conformsToRole($role);
 	for(@{$pkg."::_roles"}) {
 		return 1 if $_ eq $role;
 	}
