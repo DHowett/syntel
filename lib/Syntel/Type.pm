@@ -411,6 +411,7 @@ package Syntel::Type::Struct; # NAME MEMBERS
 use strict;
 use warnings;
 use parent -norequire, "Syntel::Type::_Base";
+use role qw(Structured);
 
 sub _stringify {
 	my $s = shift;
@@ -429,6 +430,10 @@ sub new {
 	$self->{NAME} = shift;
 	$self->{MEMBERS} = shift;
 	return bless $self, $pkg;
+}
+
+sub members {
+	return $_[0]->{MEMBERS};
 }
 
 sub declString {
