@@ -26,22 +26,22 @@ my $y = Variable->new("y", $Syntel::Type::INT);
 $root->push($x->declaration);
 $root->push($y->declaration);
 
-my $fpretp = Function->new("fpretp", Type->new("void(*(*)(void))(void)"), []);
-$fpretp->push(Return->new(Cast->new($fpretp, $fpretp->returnType)));
+my $fpretp = Function->new("fpretp", Syntel::Type::Function->new(Type->new("void(*(*)(void))(void)", [])), []);
+$fpretp->push(Return->new(Cast->new($fpretp, $fpretp->type->returnType)));
 $root->push($fpretp);
 
-my $mul = Function->new("multiply", $Syntel::Type::INT, [Variable->new("_x", $Syntel::Type::INT), Variable->new("_y", $Syntel::Type::INT)]);
+my $mul = Function->new("multiply", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::INT, $Syntel::Type::INT]), ["_x", "_y"]);
 $mul->push(Return->new(BinaryOperator->new($mul->param(0), "*", $mul->param(1))));
 $root->push($mul);
 
-my $f = Function->new("whatever", $Syntel::Type::INT, []);
+my $f = Function->new("whatever", Syntel::Type::Function->new($Syntel::Type::INT, []), []);
 $f->defer(Return->new(32));
 $root->push($f);
 
-my $printf = Function->new("printf", $Syntel::Type::INT, [Variable->new("fmt", $Syntel::Type::CHAR->pointer), $Syntel::Type::VARARGS]);
+my $printf = Function->new("printf", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::CHAR->pointer, $Syntel::Type::VARARGS]));
 $root->push($printf->prototype);
 
-my $main = Function->new("main", $Syntel::Type::INT, [Variable->new("argc", $Syntel::Type::INT), Variable->new("argv", $Syntel::Type::CHAR->pointer->pointer)]);
+my $main = Function->new("main", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::INT, $Syntel::Type::CHAR->pointer->pointer]), ["argc", "argv"]);
 $main->defer(Return->new($y));
 $main->push($x->assign(ConstantValue->new(10)));
 $main->push($y->assign($f->call()));

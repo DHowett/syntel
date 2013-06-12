@@ -373,6 +373,14 @@ sub new {
 	return bless $self, $pkg;
 }
 
+sub returnType {
+	return $_[0]->{RETURN_TYPE};
+}
+
+sub arguments {
+	return $_[0]->{ARGUMENTS};
+}
+
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
