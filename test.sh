@@ -9,7 +9,7 @@ errout=$(mktemp /tmp/syntelXXXXXXX)
 exec {synfd}>&$synout
 exec {errfd}>&$errout
 
-./syntel.pl 1>&$synfd | gcc -o $t -x c - {errfd}>&2
+${1:-./syntel.pl} 1>&$synfd | gcc -o $t -x c - {errfd}>&2
 
 exec {synfd}>&-
 exec {errfd}>&-
