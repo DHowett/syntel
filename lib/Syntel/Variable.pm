@@ -1,8 +1,8 @@
 package Syntel::Variable;
 use strict;
 use warnings;
-use parent qw(Syntel::Expression Syntel::LValue);
-use role qw(Addressable);
+use parent qw(Syntel::Expression);
+use role qw(Addressable Assignable);
 
 use Syntel::Declare;
 use Syntel::Assign;
@@ -28,11 +28,6 @@ sub type {
 sub declaration {
 	my $self = shift;
 	return Syntel::Declare->new($self, @_);
-}
-
-sub assign {
-	my $self = shift;
-	return Syntel::Assign->new($self, shift);
 }
 
 sub expr {

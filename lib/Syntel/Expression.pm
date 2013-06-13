@@ -10,6 +10,7 @@ use Syntel::PrefixOperator;
 use Syntel::FunctionCall;
 use Syntel::StructMemberAccess;
 use Syntel::ArrayIndexAccess;
+use Syntel::Assign;
 
 sub conformsToRole {
 	my $self = shift;
@@ -39,6 +40,12 @@ sub call {
 	my @a = @_;
 	croak "Expression $self not callable" if !$self->DOES("Callable");
 	return Syntel::FunctionCall->new($self, \@a);
+}
+
+sub assign {
+	my $self = shift;
+	croak "Expression $self not assignable" if !$self->DOES("Assignable");
+	return Syntel::Assign->new($self, @_);
 }
 
 sub index {

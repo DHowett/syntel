@@ -11,16 +11,16 @@ sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
 	my $self = {};
-	$self->{VARIABLE} = shift;
+	$self->{EXPR} = shift;
 	$self->{VALUE} = shift;
 	$self->{TYPE} = Syntel::Util::type($self->{VALUE}); # Inherit type from righthand value.
-	croak "Variable in Assign not an lvalue" if !$self->{VARIABLE}->DOES("LValue");
+	croak "Expr in assign not Assignable" if !$self->{EXPR}->DOES("Assignable");
 	return bless $self, $pkg
 }
 
 sub expr {
 	my $self = shift;
-	return $self->{VARIABLE}->expr()." = ".Syntel::Util::expr($self->{VALUE});
+	return Syntel::Util::expr($self->{EXPR})." = ".Syntel::Util::expr($self->{VALUE});
 }
 
 # emit: handled by Expression

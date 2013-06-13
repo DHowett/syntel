@@ -2,8 +2,17 @@ package Syntel::StructMemberAccess;
 use strict;
 use warnings;
 use parent qw(Syntel::Expression);
+use role;
 
 use Syntel::Util;
+
+sub conformsToRole {
+	my $self = shift;
+	my $role = shift;
+	return 0 if !ref $self;
+	return 1 if $role eq "Assignable" && ($self->{EXPR}->DOES("Assignable"));
+	return 0;
+}
 
 sub new {
 	my $proto = shift;

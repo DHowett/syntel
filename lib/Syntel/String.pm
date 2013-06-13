@@ -1,7 +1,7 @@
 package Syntel::String;
 use strict;
 use warnings;
-use parent qw(Syntel::ConstantValue Syntel::LValue);
+use parent qw(Syntel::ConstantValue);
 
 use Syntel::Type;
 
