@@ -113,7 +113,11 @@ sub emit {
 		}
 	}
 	$i .= ")";
-	return $self->{FUNCTION}->type->returnType->declString($i);
+	# Had knowledge of what's inside a Syntel::Type::Function. Sad.
+	my @k = $self->{FUNCTION}->type->_aggregate("STORAGE_CLASSES", "SPECIFIERS");
+	my $s = "";
+	$s = join(" ", @k)." " if @k;
+	return $s.$self->{FUNCTION}->type->returnType->declString($i);
 }
 
 1;

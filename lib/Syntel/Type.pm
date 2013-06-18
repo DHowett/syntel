@@ -40,9 +40,44 @@ sub new {
 		my $typeName = shift;
 		(my $cacheKey = $typeName) =~ s/\s+/ /g;
 		return $_typeCache{$cacheKey} if defined $_typeCache{$cacheKey};
-		return $_typeCache{$cacheKey} = scalar _parseTypeString($typeName);
+		my $type = scalar _parseTypeString($typeName);
+		$type->{_CACHED} = 1;
+		return $_typeCache{$cacheKey} = $type;
 	}
 	return bless {}, $pkg;
+}
+
+sub _isStorageClass {
+	my $n = shift;
+	return 0 if $n eq "";
+	return 1 if $n eq "typedef";
+	return 1 if $n eq "extern";
+	return 1 if $n eq "static";
+	return 1 if $n eq "auto";
+	return 1 if $n eq "register";
+	return 0;
+}
+
+sub _isTypeQualifier {
+	my $n = shift;
+	return 0 if $n eq "";
+	return 1 if $n eq "const";
+	return 1 if $n eq "restrict";
+	return 1 if $n eq "volatile";
+	return 0;
+}
+
+sub _isFunctionSpecifier {
+	my $n = shift;
+	return 0 if $n eq "";
+	return 1 if $n eq "inline";
+	return 0;
+}
+
+sub _isKeyword {
+	my $n = shift;
+	return 0 if $n eq "";
+	return _isStorageClass($n) || _isTypeQualifier($n) || _isFunctionSpecifier($n);
 }
 
 sub _parseTypeString {
@@ -56,7 +91,7 @@ sub _parseTypeString {
 
 	return undef if $typeString eq "";
 
-	my $type = {};
+	my $type = Syntel::Type::_Base->new();
 
 	my @braces = matchedDelimiterSet($typeString, "{", "}");
 	my @parens = matchedDelimiterSet($typeString, "(", ")");
@@ -74,6 +109,9 @@ sub _parseTypeString {
 		$typeString = substr($typeString, 0, $parens[0]-1).substr($typeString, $parens[3]);
 		# If we bear a passed inner type, it's probably our return type.
 		$type->{RETURN_TYPE} = scalar _parseTypeString($typeString, $passedInnerType);
+
+		# Propagate up storage classes and function specifiers.
+		$type->_propagateKeysFrom($type->{RETURN_TYPE}, "STORAGE_CLASSES", "SPECIFIERS");
 
 		if($right =~ /^\s*void\s*/) {
 			$type->{ARGUMENTS} = [];
@@ -100,21 +138,37 @@ sub _parseTypeString {
 		# If our type is of the sort '*NAME[' or '^NAME[' where the '[' is optional,
 		# pull NAME out and leave the rest unmolested.
 		# This is also valid for TYPE *NAME[ and TYPE ^NAME
-		if($typeString =~ /[\^\*](\w+)(\[\d*\])?$/) {
-			$typeName = $1;
+		if($typeString =~ /[*^]\s*([\$\w\s]+)\s*(?:\[\d*\])?$/) {
+			my @bits = split(/\s+/, $1);
+			my @keywords = sort grep { _isKeyword($_); } @bits;
+			my @names = grep { !_isKeyword($_); } @bits;
+			$typeName = $names[0];
+			if(@keywords) {
+				$type->{QUALIFIERS} = [grep { _isTypeQualifier($_); } @keywords];
+				# Pointers cannot have storage classes or function specifiers.
+				#$type->{SPECIFIERS} = [grep { _isFunctionSpecifier($_); } @keywords];
+				#$type->{STORAGE_CLASSES} = [grep { _isStorageClass($_); } @keywords];
+			}
 			substr($typeString, $-[1], $+[1] - $-[1]) = "";
 		}
 
-		if($typeString =~ /\s*(\^|\*|\[\s*(\d*)\s*\])$/p) {
+		if($typeString =~ /\[\s*(\d*)\s*\]$/p) {
+			my $newType = ${^PREMATCH};
+			$typePackage = "Array";
+			my $alen = undef;
+			$alen = int($1) if $1 ne "";
+			$type->{LENGTH} = $alen;
+
+			# If we have a subtype string, we might need to nest *our* inner type inside it.
+			my $innerType = $newType ? scalar _parseTypeString($newType, $passedInnerType) : $passedInnerType;
+			$type->{INNER_TYPE} = $innerType if $innerType;
+
+			# Propagate up storage classes and function specifiers.
+			$type->_propagateKeysFrom($type->{INNER_TYPE}, "STORAGE_CLASSES", "SPECIFIERS");
+		} elsif($typeString =~ /([*^])$/p) {
 			my $newType = ${^PREMATCH};
 			$typePackage = "Pointer" if($1 eq "*");
 			$typePackage = "BlockPointer" if($1 eq "^");
-			if(substr($1, 0, 1) eq "[") {
-				$typePackage = "Array";
-				my $alen = undef;
-				$alen = int($2) if $2 ne "";
-				$type->{LENGTH} = $alen;
-			}
 
 			# If we have a subtype string, we might need to nest *our* inner type inside it.
 			my $innerType = $newType ? scalar _parseTypeString($newType, $passedInnerType) : $passedInnerType;
@@ -122,6 +176,9 @@ sub _parseTypeString {
 				$innerType->{_POINTER_TYPE} = $type if $typePackage eq "Pointer";
 				$type->{INNER_TYPE} = $innerType;
 			}
+
+			# Propagate up storage classes and function specifiers.
+			$type->_propagateKeysFrom($type->{INNER_TYPE}, "STORAGE_CLASSES", "SPECIFIERS");
 		} elsif($typeString =~ /^\s*(struct|union|enum)\s*(\w+)?\s*{?/) {
 			my $cacheKey = $1;
 			$typePackage = ucfirst($1);
@@ -136,6 +193,7 @@ sub _parseTypeString {
 			if($structname) {
 				$cacheKey .= " ".$structname;
 				$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
+				$type->{_CACHED} = 1;
 				$_typeCache{$cacheKey} = $type;
 			}
 
@@ -160,10 +218,21 @@ sub _parseTypeString {
 			$typePackage = "Plain";
 			my $cacheKey = "";
 
+			my @bits = split(/\s+/, $typeString);
+			my @keywords = sort grep { _isKeyword($_); } @bits;
+			my @remaining = grep { !_isKeyword($_); } @bits;
+			$typeString = join(" ", @remaining);
+			if(@keywords) {
+				$type->{QUALIFIERS} = [grep { _isTypeQualifier($_); } @keywords];
+				$type->{SPECIFIERS} = [grep { _isFunctionSpecifier($_); } @keywords];
+				$type->{STORAGE_CLASSES} = [grep { _isStorageClass($_); } @keywords];
+				$cacheKey .= join(" ", @keywords);
+			}
+
 			if($typeString =~ /\s*:\s*(\d+)$/p) {
 				$typeString = ${^PREMATCH};
 				$type->{PACKED_BITS} = $1;
-				$cacheKey = ":$1";
+				$cacheKey .= ":$1";
 			}
 
 			# If our type string is of the sort 'TYPE NAME', pull out the name.
@@ -178,6 +247,7 @@ sub _parseTypeString {
 			$type->{TYPE} = $typeString;
 
 			$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
+			$type->{_CACHED} = 1;
 			$_typeCache{$cacheKey} = $type;
 		}
 		bless $type, "Syntel::Type::".$typePackage;
@@ -239,15 +309,37 @@ use role qw(Statement);
 use Scalar::Util qw(blessed);
 
 sub _stringify {
+	my $s = shift;
+	(blessed $s) =~ m/(\w+)$/;
+	return join("!", $s->_aggregate("QUALIFIERS", "STORAGE_CLASSES", "SPECIFIERS")).$1;
+}
+
+sub _propagateKeysFrom {
 	my $self = shift;
-	(blessed $self) =~ m/(\w+)$/;
-	return $1;
+	my $from = shift;
+	for(@_) {
+		$self->{$_} = $from->{$_};
+		$from->{$_} = undef;
+	}
+}
+
+sub _aggregate {
+	my $self = shift;
+	my @o = ();
+	for(@_) {
+		push(@o, @{$self->{$_}}) if $self->{$_};
+	}
+	return grep {$_ && $_ ne ""} @o;
 }
 
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
-	return bless {}, $pkg;
+	return bless {
+		QUALIFIERS => undef,
+		STORAGE_CLASSES => undef,
+		SPECIFIERS => undef,
+	}, $pkg;
 }
 
 sub pointer {
@@ -273,6 +365,34 @@ sub declaration {
 sub emit {
 	my $self = shift;
 	return $self->declString();
+}
+
+sub _decache {
+	my $self = shift;
+	my $s = $self;
+	if($self->{_CACHED}) {
+		$s = Storable::dclone($self);
+		delete $s->{_CACHED};
+	}
+	return $s;
+}
+
+sub withSpecifier {
+	my $self = _decache(shift);
+	push(@{$self->{SPECIFIERS}}, @_);
+	return $self;
+}
+
+sub withQualifier {
+	my $self = _decache(shift);
+	push(@{$self->{QUALIFIERS}}, @_);
+	return $self;
+}
+
+sub withStorageClass {
+	my $self = _decache(shift);
+	push(@{$self->{STORAGE_CLASSES}}, @_);
+	return $self;
 }
 1;
 
@@ -342,9 +462,17 @@ sub declString {
 	my $self = shift;
 	my $name = shift//"";
 	my $inner = $self->{INNER_TYPE};
-	$name = $self->_pointerChar.$name;
+	my @k = $self->_aggregate("STORAGE_CLASSES", "SPECIFIERS");
+	my $s = "";
+	$s = join(" ", @k)." " if @k;
+
+	my @qual = $self->_aggregate("QUALIFIERS");
+	my $qualifiers = "";
+	$qualifiers = join(" ", @qual)." " if @qual;
+
+	$name = $self->_pointerChar.$qualifiers.$name;
 	$name = "(".$name.")" if ($inner->DOES("Array") || $inner->DOES("Function")) && !$inner->DOES("Pointer");
-	return $inner->declString($name);
+	return $s.$inner->declString($name);
 }
 1;
 
@@ -396,7 +524,10 @@ sub arguments {
 sub declString {
 	my $self = shift;
 	my $name = shift//"";
-	return $self->{RETURN_TYPE}->declString($name."(".
+	my @k = $self->_aggregate("STORAGE_CLASSES", "SPECIFIERS");
+	my $s = "";
+	$s = join(" ", @k)." " if @k;
+	return $s.$self->{RETURN_TYPE}->declString($name."(".
 		(defined $self->{ARGUMENTS}
 			? (@{$self->{ARGUMENTS}} > 0
 				? join(",", map {$_->declString()} @{$self->{ARGUMENTS}})
@@ -441,6 +572,9 @@ sub declString {
 	my $name = shift//"";
 	(blessed $self) =~ m/(\w+)$/;
 	my $t = lc($1);
+
+	my @k = $self->_aggregate("QUALIFIERS", "STORAGE_CLASSES", "SPECIFIERS");
+	$t = join(" ", @k)." ".$t if @k;
 
 	if($self->{NAME}) {
 		$t .= " ".$self->{NAME};
@@ -536,7 +670,7 @@ use parent -norequire, "Syntel::Type::_Base";
 
 sub _stringify {
 	my $s = shift;
-	return ($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}).($s->{PACKED_BITS} ? "*".$s->{PACKED_BITS} : "");
+	return join("!", $s->_aggregate("QUALIFIERS", "STORAGE_CLASSES", "SPECIFIERS")).($s->{NAME} ? $s->{NAME}.":":"").lc($s->{TYPE}).($s->{PACKED_BITS} ? "*".$s->{PACKED_BITS} : "");
 }
 
 sub new {
@@ -551,6 +685,10 @@ sub declString {
 	my $self = shift;
 	my $name = shift//"";
 	my $t = $self->{TYPE}." ".$name;
+
+	my @k = $self->_aggregate("QUALIFIERS", "STORAGE_CLASSES", "SPECIFIERS");
+	$t = join(" ", @k)." ".$t if @k;
+
 	$t =~ s/(^\s+|\s+$)//g;
 	return $t;
 }
