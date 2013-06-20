@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use role qw(Type);
 use Scalar::Util qw(blessed);
+use Storable;
 
 our %_typeCache = (
 	void		=>	Syntel::Type::Plain->new("void"),
@@ -39,10 +40,10 @@ sub new {
 	if($pkg eq __PACKAGE__) {
 		my $typeName = shift;
 		(my $cacheKey = $typeName) =~ s/\s+/ /g;
-		return $_typeCache{$cacheKey} if defined $_typeCache{$cacheKey};
-		my $type = scalar _parseTypeString($typeName);
-		$type->{_CACHED} = 1;
-		return $_typeCache{$cacheKey} = $type;
+		my $c = \$_typeCache{$cacheKey};
+		$$c = scalar _parseTypeString($typeName) if !$$c;
+		$$c->{_CACHED} = 1;
+		return $$c;
 	}
 	return bless {}, $pkg;
 }
@@ -173,6 +174,7 @@ sub _parseTypeString {
 			# If we have a subtype string, we might need to nest *our* inner type inside it.
 			my $innerType = $newType ? scalar _parseTypeString($newType, $passedInnerType) : $passedInnerType;
 			if($innerType) {
+				$type->{_CACHED} = 1;
 				$innerType->{_POINTER_TYPE} = $type if $typePackage eq "Pointer";
 				$type->{INNER_TYPE} = $innerType;
 			}
@@ -335,20 +337,15 @@ sub _aggregate {
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
-	return bless {
-		QUALIFIERS => undef,
-		STORAGE_CLASSES => undef,
-		SPECIFIERS => undef,
-	}, $pkg;
+	return bless {}, $pkg;
 }
 
 sub pointer {
 	my $self = shift;
-	my $ptr = $self->{_POINTER_TYPE};
-	if(!defined $ptr) {
-		$ptr = ($self->{_POINTER_TYPE} = Syntel::Type::Pointer->new($self));
-	}
-	return $ptr;
+	my $ptr = \$self->{_POINTER_TYPE};
+	$$ptr = Syntel::Type::Pointer->new($self) if !$$ptr;
+	$$ptr->{_CACHED} = 1;
+	return $$ptr;
 }
 
 sub array {
@@ -370,7 +367,7 @@ sub emit {
 sub _decache {
 	my $self = shift;
 	my $s = $self;
-	if($self->{_CACHED}) {
+	if($s->{_CACHED}) {
 		$s = Storable::dclone($self);
 		delete $s->{_CACHED};
 	}
@@ -378,19 +375,19 @@ sub _decache {
 }
 
 sub withSpecifier {
-	my $self = _decache(shift);
+	my $self = shift()->_decache;
 	push(@{$self->{SPECIFIERS}}, @_);
 	return $self;
 }
 
 sub withQualifier {
-	my $self = _decache(shift);
+	my $self = shift()->_decache;
 	push(@{$self->{QUALIFIERS}}, @_);
 	return $self;
 }
 
 sub withStorageClass {
-	my $self = _decache(shift);
+	my $self = shift()->_decache;
 	push(@{$self->{STORAGE_CLASSES}}, @_);
 	return $self;
 }
