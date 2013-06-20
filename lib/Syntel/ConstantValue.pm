@@ -6,18 +6,21 @@ use parent qw(Syntel::Expression);
 sub new {
 	my $proto = shift;
 	my $pkg = ref $proto || $proto;
-	my $val = shift;
-	my $self = \$val;
+	my ($val, $type) = @_;
+	my $self = {
+		VALUE => $val,
+		TYPE => $type,
+	};
 	return bless $self, $pkg
 }
 
 sub type {
-	return undef;
+	return shift()->{TYPE};
 }
 
 sub expr {
 	my $self = shift;
-	my $v = $$self;
+	my $v = $self->{VALUE};
 	return "".$v;
 }
 

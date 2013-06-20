@@ -5,16 +5,17 @@ use parent qw(Syntel::ConstantValue);
 
 use Syntel::Type;
 
+sub new {
+	my($o, $val) = @_;
+	return $o->SUPER::new($val, $Syntel::Type::CHAR->pointer);
+}
+
 sub expr {
 	my $self = shift;
-	my $v = $$self;
+	my $v = $self->{VALUE};
 	$v =~ s/"/\\"/g;
 	$v =~ s/\n/\\n/g;
 	return "\"".$v."\"";
-}
-
-sub type {
-	return $Syntel::Type::CHAR->pointer;
 }
 
 1;
