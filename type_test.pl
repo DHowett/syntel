@@ -10,8 +10,12 @@ use Syntel::Type;
 sub _declStringForType { my $t = shift; return $t->declString(@_); }
 
 print STDERR Syntel::Type->new("unsigned int"),$/;
+print STDERR Syntel::Type->new("volatile const int"),$/;
+print STDERR Syntel::Type->new("const int *const"),$/;
 print STDERR Syntel::Type->new("int abc"),$/;
 print STDERR Syntel::Type->new("int *abc"),$/;
+print STDERR Syntel::Type->new("int *const"),$/;
+print STDERR Syntel::Type->new("int *const volatile"),$/;
 print STDERR Syntel::Type->new("void ((*))((int))"),$/;
 print STDERR Syntel::Type->new("void (*(*)())()"),$/;
 print STDERR Syntel::Type->new("void (*(*(*)(inner))(middle))(outer)"),$/;
@@ -70,4 +74,6 @@ print STDERR _declStringForType(Syntel::Type->new("void (*(*)())()")),$/;
 print STDERR _declStringForType(Syntel::Type->new("void (*(*(*)(void *))(int **))(int(*)())")->array(10), "abcdef"),$/;
 print STDERR _declStringForType(Syntel::Type->new("void (*(*(*)())())()")),$/;
 print STDERR _declStringForType(Syntel::Type->new("void (*(*(*)())())(void)")),$/;
+print STDERR _declStringForType(Syntel::Type->new("static void (*(*(*const x)())())(const int)")),$/;
+print STDERR Syntel::Type->new("static int *const*const*const**const")->declString("X"),$/;
 
