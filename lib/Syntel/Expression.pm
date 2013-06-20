@@ -13,6 +13,10 @@ use Syntel::ArrayIndexAccess;
 use Syntel::Assign;
 use Syntel::Cast;
 
+use Syntel::BinaryOperator;
+use Syntel::UnaryOperator;
+use Syntel::PostfixOperator;
+
 sub conformsToRole {
 	my $self = shift;
 	my $role = shift;
@@ -69,6 +73,22 @@ sub cast {
 	$type = $self->type if !$type;
 	croak "Expression $self cast without type and does not have a type." if !$type;
 	return Syntel::Cast->new($self, $type);
+}
+
+sub binaryOp {
+	return Syntel::BinaryOperator->new(@_);
+}
+
+sub unaryOp {
+	my $self = shift;
+	my $op = shift;
+	return Syntel::UnaryOperator->new($op, $self);
+}
+
+sub postfixOp {
+	my $self = shift;
+	my $op = shift;
+	return Syntel::PostfixOperator->new($op, $self);
 }
 
 sub typed {
