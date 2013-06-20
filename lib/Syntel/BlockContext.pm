@@ -5,11 +5,7 @@ use parent qw(Syntel::Context);
 
 sub emit {
 	my $self = shift;
-	my $r = "";
-	$r .= "{".$/;
-	$r .= $self->SUPER::emit();
-	$r .= "}".$/;
-	return $r;
+	return "{".$self->SUPER::emit()."}";
 }
 
 1;

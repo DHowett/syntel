@@ -29,7 +29,6 @@ sub emit {
 	for(@{$self->{CONTENTS}}, @{$self->{DEFERRED}}) {
 		$r .= $_->emit();
 		$r .= ";" if $_->DOES("Statement");
-		$r .= $/;
 	}
 	return $r;
 }
