@@ -11,6 +11,7 @@ use Syntel::FunctionCall;
 use Syntel::StructMemberAccess;
 use Syntel::ArrayIndexAccess;
 use Syntel::Assign;
+use Syntel::Cast;
 
 sub conformsToRole {
 	my $self = shift;
@@ -60,6 +61,12 @@ sub member {
 	my $member = shift;
 	croak "Expression $self not structured" if !$self->DOES("Structured");
 	return Syntel::StructMemberAccess->new($self, $member);
+}
+
+sub cast {
+	my $self = shift;
+	my $type = shift;
+	return Syntel::Cast->new($self, $type);
 }
 
 sub typed {
