@@ -66,6 +66,8 @@ sub member {
 sub cast {
 	my $self = shift;
 	my $type = shift;
+	$type = $self->type if !$type;
+	croak "Expression $self cast without type and does not have a type." if !$type;
 	return Syntel::Cast->new($self, $type);
 }
 
