@@ -26,7 +26,7 @@ sub new {
 
 sub expr {
 	my $self = shift;
-	return Syntel::Util::expr($self->{EXPR})."[".$self->{INDEX}."]";
+	return Syntel::Util::expr($self->{EXPR})."[".Syntel::Util::expr($self->{INDEX})."]";
 }
 
 # emit: handled by Expression
