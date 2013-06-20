@@ -6,7 +6,7 @@ use role qw(Addressable Assignable);
 
 use Syntel::Declare;
 use Syntel::Assign;
-use Syntel::PrefixOperator;
+use Syntel::UnaryOperator;
 
 sub new {
 	my $proto = shift;

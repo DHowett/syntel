@@ -1,4 +1,4 @@
-package Syntel::PrefixOperator;
+package Syntel::UnaryOperator;
 use strict;
 use warnings;
 use parent qw(Syntel::Expression);

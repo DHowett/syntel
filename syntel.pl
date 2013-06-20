@@ -15,7 +15,7 @@ use aliased 'Syntel::Return';
 use aliased 'Syntel::ConstantValue';
 use aliased 'Syntel::String';
 use aliased 'Syntel::BinaryOperator';
-use aliased 'Syntel::PrefixOperator';
+use aliased 'Syntel::UnaryOperator';
 use aliased 'Syntel::While';
 use aliased 'Syntel::Type';
 use aliased 'Syntel::Cast';
@@ -64,7 +64,7 @@ $main->push($x->assign($y));
 	$block->push($i->declaration(10));
 
 	my $iprint = $printf->call(String->new("i = %d "), $i);
-	my $idec = PrefixOperator->new("--", $i);
+	my $idec = UnaryOperator->new("--", $i);
 	my $icmp = BinaryOperator->new($i, ">", 0);
 
 	my $while = While->new($icmp, [$iprint, $idec]);

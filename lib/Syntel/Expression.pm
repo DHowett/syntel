@@ -6,7 +6,7 @@ use role qw(Expression);
 
 use Carp;
 
-use Syntel::PrefixOperator;
+use Syntel::UnaryOperator;
 use Syntel::FunctionCall;
 use Syntel::StructMemberAccess;
 use Syntel::ArrayIndexAccess;
@@ -27,13 +27,13 @@ sub conformsToRole {
 sub dereference {
 	my $self = shift;
 	croak "Expression $self not dereferenceable" if !$self->DOES("Dereferenceable");
-	return Syntel::PrefixOperator->new('*', $self)->typed($self->type->innerType);
+	return Syntel::UnaryOperator->new('*', $self)->typed($self->type->innerType);
 }
 
 sub pointer {
 	my $self = shift;
 	croak "Expression $self not addressable" if !$self->DOES("Addressable");
-	return Syntel::PrefixOperator->new("&", $self)->typed($self->type->pointer);
+	return Syntel::UnaryOperator->new("&", $self)->typed($self->type->pointer);
 }
 
 sub call {
