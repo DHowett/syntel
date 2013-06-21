@@ -20,6 +20,8 @@ use aliased 'Syntel::While';
 use aliased 'Syntel::Type';
 use aliased 'Syntel::Cast';
 
+use Syntel::Lib::C;
+
 my $root = Context->new();
 my $x = Variable->new("x", $Syntel::Type::INT);
 my $y = Variable->new("y", $Syntel::Type::INT);
@@ -42,20 +44,19 @@ my $f = Function->new("whatever", Syntel::Type::Function->new($Syntel::Type::INT
 $f->defer(Return->new(32));
 $root->push($f);
 
-my $printf = Function->new("printf", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::CSTRING, $Syntel::Type::VARARGS]));
-$root->push($printf->prototype);
+$root->push($Syntel::Lib::C::printf->prototype);
 
 my $main = Function->new("main", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::INT, $Syntel::Type::CSTRING->pointer]), ["argc", "argv"]);
 $main->defer(Return->new($y));
 $main->push($x->assign(ConstantValue->new(10)));
 $main->push($y->assign($f->call()));
-my $printcall = $printf->call(String->new("x == %d, y == %d\n"), $x, $y);
+my $printcall = $Syntel::Lib::C::printf->call(String->new("x == %d, y == %d\n"), $x, $y);
 $main->push($printcall);
 $main->defer($printcall);
-$main->push($printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
-$main->push($printf->call(String->new("intop mul == %d\n"), $intop->call($mul->pointer, $x, $y)));
-$main->push($printf->call(String->new("xp = %p\n"), $x->pointer));
-$main->push($printf->call(String->new("fpretp() = %p\n"), $fpretp->call()));
+$main->push($Syntel::Lib::C::printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
+$main->push($Syntel::Lib::C::printf->call(String->new("intop mul == %d\n"), $intop->call($mul->pointer, $x, $y)));
+$main->push($Syntel::Lib::C::printf->call(String->new("xp = %p\n"), $x->pointer));
+$main->push($Syntel::Lib::C::printf->call(String->new("fpretp() = %p\n"), $fpretp->call()));
 $main->push($x->assign($y));
 
 {
@@ -63,17 +64,17 @@ $main->push($x->assign($y));
 	my $i = Variable->new("i", $Syntel::Type::INT);
 	$block->push($i->declaration(10));
 
-	my $iprint = $printf->call(String->new("i = %d "), $i);
+	my $iprint = $Syntel::Lib::C::printf->call(String->new("i = %d "), $i);
 	my $idec = UnaryOperator->new("--", $i);
 	my $icmp = BinaryOperator->new($i, ">", 0);
 
 	my $while = While->new($icmp, [$iprint, $idec]);
 	$block->push($while);
-	$block->push($printf->call(String->new("\n")));
+	$block->push($Syntel::Lib::C::printf->call(String->new("\n")));
 
 	$block->push($i->assign(10));
 	$block->push(While->do([$iprint, $idec])->while($icmp));
-	$block->push($printf->call(String->new("\n")));
+	$block->push($Syntel::Lib::C::printf->call(String->new("\n")));
 	$main->push($block);
 }
 
