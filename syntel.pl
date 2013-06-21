@@ -42,10 +42,10 @@ my $f = Function->new("whatever", Syntel::Type::Function->new($Syntel::Type::INT
 $f->defer(Return->new(32));
 $root->push($f);
 
-my $printf = Function->new("printf", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::CHAR->pointer, $Syntel::Type::VARARGS]));
+my $printf = Function->new("printf", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::CSTRING, $Syntel::Type::VARARGS]));
 $root->push($printf->prototype);
 
-my $main = Function->new("main", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::INT, $Syntel::Type::CHAR->pointer->pointer]), ["argc", "argv"]);
+my $main = Function->new("main", Syntel::Type::Function->new($Syntel::Type::INT, [$Syntel::Type::INT, $Syntel::Type::CSTRING->pointer]), ["argc", "argv"]);
 $main->defer(Return->new($y));
 $main->push($x->assign(ConstantValue->new(10)));
 $main->push($y->assign($f->call()));

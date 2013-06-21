@@ -31,6 +31,7 @@ our $DOUBLE = __PACKAGE__->new("double");
 our $SIGNED = __PACKAGE__->new("signed");
 our $UNSIGNED = __PACKAGE__->new("unsigned");
 our $BOOL = __PACKAGE__->new("bool");
+our $CSTRING = __PACKAGE__->new("char")->pointer;
 our $VARARGS = __PACKAGE__->new("...");
 
 # May not return a new instance.

@@ -14,9 +14,9 @@ our $NSString	=	Syntel::Type->new("NSString*");
 
 our $NSLog = Syntel::Function->new("NSLog", Syntel::Type::Function->new($Syntel::Type::VOID, [$NSString, $Syntel::Type::VARARGS]));
 our $msgSend = Syntel::Function->new("objc_msgSend", Syntel::Type::Function->new($id, [$id, $SEL, $Syntel::Type::VARARGS]));
-our $class_addMethod = Syntel::Function->new("class_addMethod", Syntel::Type::Function->new($BOOL, [$Class, $SEL, $IMP, $Syntel::Type::CHAR->pointer]));
+our $class_addMethod = Syntel::Function->new("class_addMethod", Syntel::Type::Function->new($BOOL, [$Class, $SEL, $IMP, $Syntel::Type::CSTRING]));
 
-our $_encode = Syntel::Function->new("\@encode", Syntel::Type::Function->new($Syntel::Type::CHAR->pointer, [$Syntel::Type::CHAR->pointer]));
-our $_selector = Syntel::Function->new("\@selector", Syntel::Type::Function->new($SEL, [$Syntel::Type::CHAR->pointer]));
+our $_encode = Syntel::Function->new("\@encode", Syntel::Type::Function->new($Syntel::Type::CSTRING, [$Syntel::Type::CSTRING]));
+our $_selector = Syntel::Function->new("\@selector", Syntel::Type::Function->new($SEL, [$Syntel::Type::CSTRING]));
 
 1;
