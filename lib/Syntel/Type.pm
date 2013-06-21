@@ -51,20 +51,20 @@ sub new {
 sub _isStorageClass {
 	my $n = shift;
 	return 0 if $n eq "";
-	return 1 if $n eq "typedef";
-	return 1 if $n eq "extern";
-	return 1 if $n eq "static";
-	return 1 if $n eq "auto";
-	return 1 if $n eq "register";
+	return 1 if $n eq "typedef"
+		|| $n eq "extern"
+		|| $n eq "static"
+		|| $n eq "auto"
+		|| $n eq "register";
 	return 0;
 }
 
 sub _isTypeQualifier {
 	my $n = shift;
 	return 0 if $n eq "";
-	return 1 if $n eq "const";
-	return 1 if $n eq "restrict";
-	return 1 if $n eq "volatile";
+	return 1 if $n eq "const"
+		|| $n eq "restrict"
+		|| $n eq "volatile";
 	return 0;
 }
 
