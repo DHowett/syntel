@@ -84,6 +84,7 @@ sub _isKeyword {
 sub _parseTypeString {
 	my $typeString = shift;
 	my $passedInnerType = shift;
+	my $pullNames = wantarray;
 	my $typeName = undef;
 
 	$typeString =~ s/\s+/ /;
@@ -238,7 +239,7 @@ sub _parseTypeString {
 			}
 
 			# If our type string is of the sort 'TYPE NAME', pull out the name.
-			if($typeString =~ /\s+(\w+)$/p) {
+			if($pullNames && $typeString =~ /\s+(\w+)$/p) {
 				$typeString = ${^PREMATCH};
 				$typeName = $1;
 			} elsif($typeString eq "...") {
