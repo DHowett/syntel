@@ -50,7 +50,7 @@ my $main = Function->new("main", Syntel::Type::Function->new($Syntel::Type::INT,
 $main->defer(Return->new($y));
 $main->push($x->assign(ConstantValue->new(10)));
 $main->push($y->assign($f->call()));
-my $printcall = $Syntel::Lib::C::printf->call(String->new("x == %d, y == %d\n"), $x, $y);
+my $printcall = $Syntel::Lib::C::printf->call(synString("x == %d, y == %d\n"), $x, $y);
 $main->push($printcall);
 $main->defer($printcall);
 $main->push($Syntel::Lib::C::printf->call(String->new("mul == %d\n"), $mul->call($x, $y)));
@@ -58,6 +58,10 @@ $main->push($Syntel::Lib::C::printf->call(String->new("intop mul == %d\n"), $int
 $main->push($Syntel::Lib::C::printf->call(String->new("xp = %p\n"), $x->pointer));
 $main->push($Syntel::Lib::C::printf->call(String->new("fpretp() = %p\n"), $fpretp->call()));
 $main->push($x->assign($y));
+
+$main->push(synString("Hello")->cast);
+$main->push(synCharSequence("Hello")->cast);
+$main->push(synCharSequence("H")->cast);
 
 {
 	my $block = BlockContext->new();
