@@ -195,9 +195,10 @@ sub _parseTypeString {
 
 			if($structname) {
 				$cacheKey .= " ".$structname;
-				$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
+				my $c = \$_typeCache{$cacheKey};
+				$type = $$c if $$c;
 				$type->{_CACHED} = 1;
-				$_typeCache{$cacheKey} = $type;
+				$$c = $type;
 			}
 
 			if(defined $braces[0]) {
@@ -249,9 +250,10 @@ sub _parseTypeString {
 
 			$type->{TYPE} = $typeString;
 
-			$type = $_typeCache{$cacheKey} if $_typeCache{$cacheKey};
+			my $c = \$_typeCache{$cacheKey};
+			$type = $$c if $$c;
 			$type->{_CACHED} = 1;
-			$_typeCache{$cacheKey} = $type;
+			$$c = $type;
 		}
 		bless $type, "Syntel::Type::".$typePackage;
 	}
