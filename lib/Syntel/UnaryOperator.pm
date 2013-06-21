@@ -26,7 +26,7 @@ sub new {
 
 sub expr {
 	my $self = shift;
-	return $self->{OP}.Syntel::Util::expr($self->{M1});
+	return $self->{OP}.($self->{OP} =~ /\w/ ? " " : "").Syntel::Util::expr($self->{M1});
 }
 
 # emit: handled by Expression
